@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 export async function GET() {
   try {
     const [products] = await pool.query(`
-      SELECT p.id, p.name, p.description, p.region, p.image_note, c.name AS category
+      SELECT p.id, p.name, p.description, p.region, p.image_note, p.image_url, c.name AS category
       FROM products p
       JOIN categories c ON p.category_id = c.id
     `);

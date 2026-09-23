@@ -385,22 +385,30 @@ export default function HomePage() {
                     className="group overflow-hidden rounded-3xl border border-stone-200 bg-[#faf9f5] transition duration-300 hover:-translate-y-1 hover:shadow-xl"
                   >
 
-                    {/* Product image placeholder */}
+                    {/* Product image (ảnh thật nếu có, không thì hiện emoji thay thế) */}
                     <div className="relative flex h-56 items-center justify-center overflow-hidden bg-gradient-to-br from-emerald-50 to-stone-100">
 
-                      <div className="text-7xl transition duration-500 group-hover:scale-110">
-                        {product.category?.includes('Cà phê')
-                          ? '☕'
-                          : product.category?.includes('Trà')
-                            ? '🍵'
-                            : product.category?.includes('Trái')
-                              ? '🍓'
-                              : product.category?.includes('Mứt')
-                                ? '🍯'
-                                : product.category?.includes('Hạt')
-                                  ? '🌰'
-                                  : '🌿'}
-                      </div>
+                      {product.image_url ? (
+                        <img
+                          src={product.image_url}
+                          alt={product.name}
+                          className="h-full w-full object-cover transition duration-500 group-hover:scale-110"
+                        />
+                      ) : (
+                        <div className="text-7xl transition duration-500 group-hover:scale-110">
+                          {product.category?.includes('Cà phê')
+                            ? '☕'
+                            : product.category?.includes('Trà')
+                              ? '🍵'
+                              : product.category?.includes('Trái')
+                                ? '🍓'
+                                : product.category?.includes('Mứt')
+                                  ? '🍯'
+                                  : product.category?.includes('Hạt')
+                                    ? '🌰'
+                                    : '🌿'}
+                        </div>
+                      )}
 
                       <div className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-emerald-800 shadow-sm">
                         {product.category}
