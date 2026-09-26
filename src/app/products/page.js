@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-
+import { useCartCount } from '@/hooks/useCartCount';
 /* =========================================================
    ICONS
 ========================================================= */
@@ -249,7 +249,7 @@ export default function ProductsPage() {
   const [sort, setSort] = useState('default');
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
-  const [cartCount] = useState(3);
+  const cartCount = useCartCount();
 
   /* =======================================================
      LOAD PRODUCTS

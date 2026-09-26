@@ -1,5 +1,5 @@
 'use client';
-
+import { useCartCount } from '@/hooks/useCartCount';
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 
@@ -243,7 +243,7 @@ function SmartImage({
 export default function HomePage() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [cartCount] = useState(3);
+  const cartCount = useCartCount();
 
   useEffect(() => {
     async function loadProducts() {
