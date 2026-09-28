@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCartCount } from "@/hooks/useCartCount";
+import UserMenu from "@/components/UserMenu";
 
 /* =========================
    ICONS
@@ -50,21 +51,6 @@ function SearchIcon({ className = "h-5 w-5" }) {
     >
       <circle cx="11" cy="11" r="6.5" />
       <path d="M16 16l5 5" />
-    </svg>
-  );
-}
-
-function UserIcon({ className = "h-5 w-5" }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-    >
-      <circle cx="12" cy="8" r="3.5" />
-      <path d="M5 20c.8-3.5 3.2-5.5 7-5.5s6.2 2 7 5.5" />
     </svg>
   );
 }
@@ -551,13 +537,7 @@ export default function ProductDetailPage() {
               <SearchIcon />
             </button>
 
-            <Link
-              href="/login"
-              className="flex h-10 w-10 items-center justify-center rounded-full text-[#53633c] transition hover:bg-[#eee8d9]"
-              aria-label="Đăng nhập"
-            >
-              <UserIcon />
-            </Link>
+            <UserMenu variant="icon" />
 
             <Link
               href="/cart"

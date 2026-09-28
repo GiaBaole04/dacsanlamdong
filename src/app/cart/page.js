@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useCartCount } from "@/hooks/useCartCount";
+import UserMenu from "@/components/UserMenu";
 
 /* =========================
    ICONS (dùng lại đúng bộ icon các trang khác đang dùng)
@@ -22,15 +23,6 @@ function ArrowRight({ className = "h-5 w-5" }) {
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
       <path d="M5 12h14" />
       <path d="M12 5l7 7-7 7" />
-    </svg>
-  );
-}
-
-function UserIcon({ className = "h-5 w-5" }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <circle cx="12" cy="8" r="3.5" />
-      <path d="M5 20c.8-3.5 3.2-5.5 7-5.5s6.2 2 7 5.5" />
     </svg>
   );
 }
@@ -172,9 +164,7 @@ export default function CartPage() {
           </nav>
 
           <div className="flex items-center gap-2">
-            <Link href="/login" className="flex h-10 w-10 items-center justify-center rounded-full text-[#53633c] transition hover:bg-[#eee8d9]" aria-label="Đăng nhập">
-              <UserIcon />
-            </Link>
+            <UserMenu variant="icon" />
             <Link href="/cart" className="relative flex h-10 w-10 items-center justify-center rounded-full bg-[#eee8d9] text-[#344723]" aria-label="Giỏ hàng">
               <ShoppingBagIcon />
               {cartCount > 0 && (

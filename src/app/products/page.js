@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useCartCount } from '@/hooks/useCartCount';
+import UserMenu from '@/components/UserMenu';
 /* =========================================================
    ICONS
 ========================================================= */
@@ -34,21 +35,6 @@ function ShoppingBagIcon() {
     >
       <path d="M5 8.5h14l-.8 11H5.8L5 8.5Z" />
       <path d="M8.5 9V6.8a3.5 3.5 0 0 1 7 0V9" />
-    </svg>
-  );
-}
-
-function UserIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      className="h-5 w-5"
-    >
-      <circle cx="12" cy="8" r="3.2" />
-      <path d="M5.5 20c.8-4 3-6 6.5-6s5.7 2 6.5 6" />
     </svg>
   );
 }
@@ -483,13 +469,7 @@ export default function ProductsPage() {
               )}
             </Link>
 
-            <Link
-              href="/login"
-              className="hidden items-center gap-2 text-sm text-[#555546] transition hover:text-[#315020] md:flex"
-            >
-              <UserIcon />
-              Đăng nhập
-            </Link>
+            <UserMenu variant="text" />
 
           </div>
 

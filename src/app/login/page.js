@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 /* =========================
    ICONS
@@ -67,18 +68,22 @@ function ArrowRight({ className = "h-4 w-4" }) {
 ========================= */
 
 export default function LoginPage() {
+  const router = useRouter();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [notice, setNotice] = useState("");
+  const [noticeType, setNoticeType] = useState("error"); // "error" | "info"
 
   async function handleSubmit(e) {
     e.preventDefault();
     setNotice("");
 
     if (!email || !password) {
+      setNoticeType("error");
       setNotice("Nhập đầy đủ email và mật khẩu để tiếp tục.");
       return;
     }
@@ -86,20 +91,24 @@ export default function LoginPage() {
     setSubmitting(true);
 
     try {
-      // Khi API đăng nhập (/api/auth/login) hoàn thiện, thay đoạn giả lập
-      // dưới đây bằng lệnh gọi thật, ví dụ:
-      //
-      // const res = await fetch('/api/auth/login', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ email, password }),
-      // });
-      // const data = await res.json();
-      // if (!res.ok) throw new Error(data.error || 'Đăng nhập thất bại.');
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, remember }),
+      });
+      const data = await res.json();
 
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      setNotice("Chức năng đăng nhập sẽ hoạt động sau khi kết nối API tài khoản.");
+      if (!res.ok) {
+        throw new Error(data.error || "Đăng nhập thất bại.");
+      }
+
+      // Báo cho các component khác (nếu có theo dõi trạng thái đăng nhập) biết vừa đăng nhập
+      window.dispatchEvent(new Event("authUpdated"));
+
+      router.push("/");
+      router.refresh();
     } catch (err) {
+      setNoticeType("error");
       setNotice(err.message || "Có lỗi xảy ra, thử lại sau.");
     } finally {
       setSubmitting(false);
@@ -112,7 +121,6 @@ export default function LoginPage() {
           CỘT TRÁI — KỂ CHUYỆN THƯƠNG HIỆU
       ========================= */}
       <div className="relative hidden overflow-hidden bg-[#243219] lg:block">
-        {/* Hoạ tiết lá cách điệu, gợi nhắc vùng cao nguyên */}
         <svg
           className="absolute inset-0 h-full w-full opacity-[0.08]"
           viewBox="0 0 600 900"
@@ -180,7 +188,6 @@ export default function LoginPage() {
       ========================= */}
       <div className="flex items-center justify-center px-6 py-14 sm:px-10">
         <div className="w-full max-w-[380px]">
-          {/* Logo chỉ hiện trên mobile (vì cột trái đã ẩn) */}
           <Link href="/" className="mb-10 flex items-center gap-3 lg:hidden">
             <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#c8b98d] text-[#53633c]">
               <LeafIcon className="h-5 w-5" />
@@ -199,7 +206,6 @@ export default function LoginPage() {
           </p>
 
           <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-5">
-            {/* EMAIL */}
             <div>
               <label htmlFor="email" className="mb-1.5 block text-[13px] font-medium text-[#4d513e]">
                 Email
@@ -218,7 +224,6 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* PASSWORD */}
             <div>
               <div className="mb-1.5 flex items-center justify-between">
                 <label htmlFor="password" className="block text-[13px] font-medium text-[#4d513e]">
@@ -250,7 +255,6 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* REMEMBER */}
             <label className="flex select-none items-center gap-2.5 text-[13px] text-[#4d513e]">
               <input
                 type="checkbox"
@@ -261,14 +265,18 @@ export default function LoginPage() {
               Ghi nhớ đăng nhập
             </label>
 
-            {/* NOTICE */}
             {notice && (
-              <p className="border border-[#e1daca] bg-[#f1eadb] px-4 py-3 text-[13px] leading-5 text-[#6b551f]">
+              <p
+                className={`border px-4 py-3 text-[13px] leading-5 ${
+                  noticeType === "error"
+                    ? "border-[#e6cfc4] bg-[#faf0ea] text-[#a04a2e]"
+                    : "border-[#e1daca] bg-[#f1eadb] text-[#6b551f]"
+                }`}
+              >
                 {notice}
               </p>
             )}
 
-            {/* SUBMIT */}
             <button
               type="submit"
               disabled={submitting}
