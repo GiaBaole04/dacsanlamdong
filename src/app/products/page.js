@@ -4,9 +4,9 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useCartCount } from '@/hooks/useCartCount';
-import UserMenu from '@/components/UserMenu';
 import Header from '@/components/Header';
-import Footer from "@/components/Footer";
+import Footer from '@/components/Footer';
+
 /* =========================================================
    ICONS
 ========================================================= */
@@ -37,21 +37,6 @@ function ShoppingBagIcon() {
     >
       <path d="M5 8.5h14l-.8 11H5.8L5 8.5Z" />
       <path d="M8.5 9V6.8a3.5 3.5 0 0 1 7 0V9" />
-    </svg>
-  );
-}
-
-function LeafIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      className="h-6 w-6"
-    >
-      <path d="M20 4C11 4 5 8 5 14c0 3 2 5 5 5 6 0 9-6 10-15Z" />
-      <path d="M4 20c3-5 7-8 13-11" />
     </svg>
   );
 }
@@ -122,7 +107,7 @@ function XIcon() {
    PRODUCT CARD
 ========================================================= */
 
-function ProductCard({ product, index }) {
+function ProductCard({ product }) {
   const firstVariant = product.variants?.[0];
 
   const price = firstVariant?.price
@@ -184,15 +169,14 @@ function ProductCard({ product, index }) {
 
         {/* DESCRIPTION */}
         <p className="mt-3 min-h-[48px] text-[13px] leading-6 text-[#817967]">
-          {product.description || 'Đặc sản được tuyển chọn từ vùng đất Lâm Đồng.'}
+          {product.description ||
+            'Đặc sản được tuyển chọn từ vùng đất Lâm Đồng.'}
         </p>
 
         {/* PRICE */}
         <div className="mt-5 flex items-end justify-between">
           <div>
-            <span className="text-[12px] text-[#8c8574]">
-              Giá từ
-            </span>
+            <span className="text-[12px] text-[#8c8574]">Giá từ</span>
 
             {price ? (
               <span className="ml-1.5 text-[18px] font-semibold text-[#754522]">
@@ -226,10 +210,16 @@ export default function ProductsPage() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const [search, setSearch] = useState('');
+  /*
+   * QUAN TRỌNG:
+   * Lấy q từ URL để Header tìm kiếm có thể lọc sản phẩm.
+   */
+  const [search, setSearch] = useState(searchParams.get('q') || '');
+
   const [selectedCategory, setSelectedCategory] = useState(
     searchParams.get('category') || ''
   );
+
   const [selectedRegion, setSelectedRegion] = useState(
     searchParams.get('region') || ''
   );
@@ -238,6 +228,20 @@ export default function ProductsPage() {
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
   const cartCount = useCartCount();
+
+  /* =======================================================
+     SYNC URL SEARCH
+  ======================================================= */
+
+  useEffect(() => {
+    const keyword = searchParams.get('q') || '';
+    const category = searchParams.get('category') || '';
+    const region = searchParams.get('region') || '';
+
+    setSearch(keyword);
+    setSelectedCategory(category);
+    setSelectedRegion(region);
+  }, [searchParams]);
 
   /* =======================================================
      LOAD PRODUCTS
@@ -303,11 +307,16 @@ export default function ProductsPage() {
 
     if (keyword) {
       result = result.filter((product) => {
+        const name = product.name?.toLowerCase() || '';
+        const description = product.description?.toLowerCase() || '';
+        const category = product.category?.toLowerCase() || '';
+        const region = product.region?.toLowerCase() || '';
+
         return (
-          product.name?.toLowerCase().includes(keyword) ||
-          product.description?.toLowerCase().includes(keyword) ||
-          product.category?.toLowerCase().includes(keyword) ||
-          product.region?.toLowerCase().includes(keyword)
+          name.includes(keyword) ||
+          description.includes(keyword) ||
+          category.includes(keyword) ||
+          region.includes(keyword)
         );
       });
     }
@@ -391,13 +400,10 @@ export default function ProductsPage() {
       =================================================== */}
 
       <section className="relative overflow-hidden bg-[#edf0e5]">
-
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(82,112,61,.16),transparent_35%)]" />
 
         <div className="relative mx-auto max-w-[1400px] px-6 py-20 lg:px-10 lg:py-24">
-
           <div className="max-w-3xl">
-
             <p className="text-[12px] font-semibold uppercase tracking-[0.28em] text-[#78502d]">
               Tinh hoa từ cao nguyên
             </p>
@@ -416,8 +422,16 @@ export default function ProductsPage() {
               hương vị Đà Lạt.
             </p>
 
+            {/* SEARCH RESULT INFO */}
+            {search && (
+              <div className="mt-7 inline-flex items-center rounded-full border border-[#cdd5c3] bg-white/70 px-4 py-2 text-[13px] text-[#526149]">
+                Kết quả tìm kiếm cho:
+                <span className="ml-1.5 font-semibold text-[#315020]">
+                  "{search}"
+                </span>
+              </div>
+            )}
           </div>
-
         </div>
       </section>
 
@@ -426,17 +440,13 @@ export default function ProductsPage() {
       =================================================== */}
 
       <section className="bg-[#fbf8ef] py-16">
-
         <div className="mx-auto max-w-[1400px] px-6 lg:px-10">
 
           {/* TOP BAR */}
-
           <div className="flex flex-col gap-5 border-b border-[#ded8c8] pb-7 lg:flex-row lg:items-center lg:justify-between">
 
             {/* SEARCH */}
-
             <div className="relative w-full lg:max-w-[430px]">
-
               <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#817967]">
                 <SearchIcon />
               </div>
@@ -449,12 +459,20 @@ export default function ProductsPage() {
                 className="h-12 w-full rounded-full border border-[#d8d3c4] bg-white pl-12 pr-5 text-sm text-[#292c18] outline-none transition placeholder:text-[#9a9587] focus:border-[#496a35] focus:ring-2 focus:ring-[#496a35]/10"
               />
 
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch('')}
+                  className="absolute right-4 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full bg-[#e9e6da] text-[#666151] transition hover:bg-[#dcd8c9]"
+                  aria-label="Xóa tìm kiếm"
+                >
+                  <XIcon />
+                </button>
+              )}
             </div>
 
             {/* SORT */}
-
             <div className="flex items-center gap-3">
-
               <span className="hidden text-[13px] text-[#817967] sm:block">
                 Sắp xếp:
               </span>
@@ -480,15 +498,11 @@ export default function ProductsPage() {
                   Tên A-Z
                 </option>
               </select>
-
             </div>
-
           </div>
 
           {/* MOBILE FILTER BUTTON */}
-
           <div className="mt-6 lg:hidden">
-
             <button
               type="button"
               onClick={() => setMobileFilterOpen(true)}
@@ -497,31 +511,22 @@ export default function ProductsPage() {
               <SlidersIcon />
               Bộ lọc sản phẩm
             </button>
-
           </div>
 
           {/* CONTENT */}
-
           <div className="mt-10 grid gap-10 lg:grid-cols-[230px_1fr]">
 
-            {/* =================================================
-                SIDEBAR
-            ================================================= */}
-
+            {/* SIDEBAR */}
             <aside className="hidden lg:block">
-
               <div className="sticky top-[105px]">
 
                 {/* CATEGORY */}
-
                 <div>
-
                   <div className="font-serif text-[18px] font-bold text-[#292c18]">
                     Danh mục
                   </div>
 
                   <div className="mt-5 space-y-2">
-
                     <button
                       type="button"
                       onClick={() => setSelectedCategory('')}
@@ -532,14 +537,10 @@ export default function ProductsPage() {
                       }`}
                     >
                       <span>Tất cả sản phẩm</span>
-
-                      <span>
-                        {products.length}
-                      </span>
+                      <span>{products.length}</span>
                     </button>
 
                     {categories.map((category) => {
-
                       const count = products.filter(
                         (product) =>
                           product.category === category
@@ -559,30 +560,23 @@ export default function ProductsPage() {
                           }`}
                         >
                           <span>{category}</span>
-
                           <span>{count}</span>
                         </button>
                       );
                     })}
-
                   </div>
-
                 </div>
 
                 {/* DIVIDER */}
-
                 <div className="my-8 h-px bg-[#ddd7c8]" />
 
                 {/* REGION */}
-
                 <div>
-
                   <div className="font-serif text-[18px] font-bold text-[#292c18]">
                     Vùng sản xuất
                   </div>
 
                   <div className="mt-5 space-y-2">
-
                     <button
                       type="button"
                       onClick={() => setSelectedRegion('')}
@@ -611,13 +605,10 @@ export default function ProductsPage() {
                         {region}
                       </button>
                     ))}
-
                   </div>
-
                 </div>
 
                 {/* RESET */}
-
                 {hasFilter && (
                   <button
                     type="button"
@@ -627,23 +618,15 @@ export default function ProductsPage() {
                     Xóa tất cả bộ lọc
                   </button>
                 )}
-
               </div>
-
             </aside>
 
-            {/* =================================================
-                PRODUCT AREA
-            ================================================= */}
-
+            {/* PRODUCT AREA */}
             <div>
 
               {/* RESULT HEADER */}
-
               <div className="mb-6 flex items-center justify-between">
-
                 <div className="text-[14px] text-[#817967]">
-
                   {loading ? (
                     'Đang tải sản phẩm...'
                   ) : (
@@ -655,7 +638,6 @@ export default function ProductsPage() {
                       sản phẩm
                     </>
                   )}
-
                 </div>
 
                 {hasFilter && (
@@ -667,15 +649,11 @@ export default function ProductsPage() {
                     Xóa bộ lọc
                   </button>
                 )}
-
               </div>
 
               {/* LOADING */}
-
               {loading ? (
-
                 <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-
                   {[1, 2, 3, 4, 5, 6].map((item) => (
                     <div
                       key={item}
@@ -691,29 +669,19 @@ export default function ProductsPage() {
                       </div>
                     </div>
                   ))}
-
                 </div>
-
               ) : filteredProducts.length > 0 ? (
-
                 <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-
-                  {filteredProducts.map((product, index) => (
+                  {filteredProducts.map((product) => (
                     <ProductCard
                       key={product.id}
                       product={product}
-                      index={index}
                     />
                   ))}
-
                 </div>
-
               ) : (
-
                 /* EMPTY */
-
                 <div className="rounded-2xl border border-dashed border-[#cbc5b5] bg-white py-24 text-center">
-
                   <div className="text-5xl">
                     🌿
                   </div>
@@ -734,15 +702,10 @@ export default function ProductsPage() {
                   >
                     Xem tất cả sản phẩm
                   </button>
-
                 </div>
-
               )}
-
             </div>
-
           </div>
-
         </div>
       </section>
 
@@ -754,7 +717,6 @@ export default function ProductsPage() {
         <div className="fixed inset-0 z-[100] lg:hidden">
 
           {/* BACKDROP */}
-
           <button
             type="button"
             aria-label="Đóng bộ lọc"
@@ -763,11 +725,9 @@ export default function ProductsPage() {
           />
 
           {/* PANEL */}
-
           <div className="absolute bottom-0 left-0 right-0 max-h-[85vh] overflow-y-auto rounded-t-3xl bg-[#fbf8ef] p-6 shadow-2xl">
 
             <div className="flex items-center justify-between">
-
               <h2 className="font-serif text-[24px] font-bold text-[#292c18]">
                 Bộ lọc
               </h2>
@@ -779,19 +739,15 @@ export default function ProductsPage() {
               >
                 <XIcon />
               </button>
-
             </div>
 
             {/* CATEGORY */}
-
             <div className="mt-8">
-
               <div className="text-[13px] font-semibold uppercase tracking-[0.12em] text-[#78502d]">
                 Danh mục
               </div>
 
               <div className="mt-4 grid grid-cols-2 gap-2">
-
                 <button
                   type="button"
                   onClick={() => setSelectedCategory('')}
@@ -820,21 +776,16 @@ export default function ProductsPage() {
                     {category}
                   </button>
                 ))}
-
               </div>
-
             </div>
 
             {/* REGION */}
-
             <div className="mt-8">
-
               <div className="text-[13px] font-semibold uppercase tracking-[0.12em] text-[#78502d]">
                 Vùng sản xuất
               </div>
 
               <div className="mt-4 grid grid-cols-2 gap-2">
-
                 <button
                   type="button"
                   onClick={() => setSelectedRegion('')}
@@ -863,15 +814,11 @@ export default function ProductsPage() {
                     {region}
                   </button>
                 ))}
-
               </div>
-
             </div>
 
             {/* ACTION */}
-
             <div className="mt-8 flex gap-3">
-
               <button
                 type="button"
                 onClick={resetFilters}
@@ -887,9 +834,7 @@ export default function ProductsPage() {
               >
                 Xem sản phẩm
               </button>
-
             </div>
-
           </div>
         </div>
       )}
@@ -899,7 +844,6 @@ export default function ProductsPage() {
       =================================================== */}
 
       <section className="bg-[#214919] text-white">
-
         <div className="mx-auto grid max-w-[1400px] grid-cols-2 md:grid-cols-4">
 
           <div className="border-b border-white/10 px-6 py-7 md:border-b-0 md:border-r">
@@ -943,14 +887,13 @@ export default function ProductsPage() {
           </div>
 
         </div>
-
       </section>
 
       {/* ===================================================
           FOOTER
       =================================================== */}
 
-       <Footer />
+      <Footer />
 
     </main>
   );
