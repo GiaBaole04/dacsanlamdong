@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useCartCount } from "@/hooks/useCartCount";
-import UserMenu from "@/components/UserMenu";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import { useCart } from "@/hooks/useCart";
 
 /* =========================
-   ICONS (dùng lại đúng bộ icon các trang khác đang dùng)
+   ICONS
 ========================= */
 
 function ArrowLeft({ className = "h-5 w-5" }) {
@@ -18,7 +18,7 @@ function ArrowLeft({ className = "h-5 w-5" }) {
   );
 }
 
-function ArrowRight({ className = "h-5 w-5" }) {
+function ArrowRight({ className = "h-4 w-4" }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
       <path d="M5 12h14" />
@@ -72,6 +72,16 @@ function TrashIcon({ className = "h-4 w-4" }) {
   );
 }
 
+function InfoIcon({ className = "h-4 w-4" }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 11v5" />
+      <path d="M12 8h.01" />
+    </svg>
+  );
+}
+
 /* =========================
    HELPERS
 ========================= */
@@ -82,100 +92,16 @@ function formatPrice(price) {
   return `${number.toLocaleString("vi-VN")}đ`;
 }
 
-function readCart() {
-  try {
-    const saved = localStorage.getItem("cart");
-    const cart = saved ? JSON.parse(saved) : [];
-    return Array.isArray(cart) ? cart : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeCart(cart) {
-  localStorage.setItem("cart", JSON.stringify(cart));
-  // Báo cho header và mọi component khác biết giỏ hàng vừa đổi
-  window.dispatchEvent(new Event("cartUpdated"));
-}
-
 /* =========================
    PAGE
 ========================= */
 
 export default function CartPage() {
-  const [cart, setCart] = useState([]);
-  const [loaded, setLoaded] = useState(false);
-  const cartCount = useCartCount();
-
-  useEffect(() => {
-    setCart(readCart());
-    setLoaded(true);
-  }, []);
-
-  function updateQuantity(index, nextQuantity) {
-    setCart((current) => {
-      const updated = [...current];
-      const maxStock = Number(updated[index]?.stock);
-      let qty = Math.max(1, nextQuantity);
-
-      if (Number.isFinite(maxStock) && maxStock > 0) {
-        qty = Math.min(qty, maxStock);
-      }
-
-      updated[index] = { ...updated[index], quantity: qty };
-      writeCart(updated);
-      return updated;
-    });
-  }
-
-  function removeItem(index) {
-    setCart((current) => {
-      const updated = current.filter((_, i) => i !== index);
-      writeCart(updated);
-      return updated;
-    });
-  }
-
-  const total = cart.reduce(
-    (sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0),
-    0
-  );
+  const { items, loading, updateQuantity, removeItem, totalCount, totalPrice, isGuest } = useCart();
 
   return (
     <main className="min-h-screen bg-[#f8f5ec] text-[#292c18]">
-      {/* HEADER */}
-      <header className="sticky top-0 z-50 border-b border-[#e4dfd2] bg-[#fbf8ef]/95 backdrop-blur">
-        <div className="mx-auto flex h-[82px] max-w-[1400px] items-center justify-between px-6 lg:px-10">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#c8b98d] text-[#53633c]">
-              <LeafIcon className="h-5 w-5" />
-            </div>
-            <div>
-              <div className="font-serif text-[17px] font-semibold tracking-[0.13em] text-[#344723]">ĐẶC SẢN</div>
-              <div className="text-[9px] font-medium tracking-[0.3em] text-[#8c7040]">LÂM ĐỒNG</div>
-            </div>
-          </Link>
-
-          <nav className="hidden items-center gap-8 lg:flex">
-            <Link href="/" className="text-[13px] font-medium text-[#626653] transition hover:text-[#344723]">Trang chủ</Link>
-            <Link href="/products" className="text-[13px] font-medium text-[#626653] transition hover:text-[#344723]">Sản phẩm</Link>
-            <Link href="/stories" className="text-[13px] font-medium text-[#626653] transition hover:text-[#344723]">Câu chuyện đặc sản</Link>
-            <Link href="/about" className="text-[13px] font-medium text-[#626653] transition hover:text-[#344723]">Giới thiệu</Link>
-          </nav>
-
-          <div className="flex items-center gap-2">
-            <UserMenu variant="icon" />
-            <Link href="/cart" className="relative flex h-10 w-10 items-center justify-center rounded-full bg-[#eee8d9] text-[#344723]" aria-label="Giỏ hàng">
-              <ShoppingBagIcon />
-              {cartCount > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-[#b08b43] px-1 text-[9px] font-bold text-white">
-                  {cartCount}
-                </span>
-              )}
-            </Link>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       {/* BREADCRUMB */}
       <div className="border-b border-[#e7e0d1] bg-[#f8f5ec]">
@@ -189,7 +115,27 @@ export default function CartPage() {
       <section className="mx-auto max-w-[1400px] px-6 py-10 lg:px-10 lg:py-14">
         <h1 className="font-serif text-3xl font-semibold text-[#344723] md:text-4xl">Giỏ hàng của bạn</h1>
 
-        {!loaded ? null : cart.length === 0 ? (
+        {/* Gợi ý đăng nhập cho khách vãng lai */}
+        {!loading && items.length > 0 && isGuest && (
+          <div className="mt-6 flex items-start gap-3 border border-[#e1daca] bg-[#f1eadb] px-4 py-3 text-sm text-[#6b551f]">
+            <InfoIcon className="mt-0.5 h-4 w-4 flex-shrink-0" />
+            <p>
+              Bạn đang mua sắm với tư cách khách.{" "}
+              <Link href="/login" className="font-semibold underline underline-offset-4">
+                Đăng nhập
+              </Link>{" "}
+              để lưu giỏ hàng vào tài khoản và xem lại trên mọi thiết bị.
+            </p>
+          </div>
+        )}
+
+        {loading ? (
+          <div className="mt-10 space-y-4">
+            {[1, 2].map((i) => (
+              <div key={i} className="h-32 animate-pulse border border-[#e4dfd2] bg-[#efe9da]" />
+            ))}
+          </div>
+        ) : items.length === 0 ? (
           /* EMPTY STATE */
           <div className="mt-16 flex flex-col items-center justify-center text-center">
             <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#ebe4d5] text-[#53633c]">
@@ -211,9 +157,9 @@ export default function CartPage() {
           <div className="mt-8 grid gap-10 lg:grid-cols-[1.6fr_1fr]">
             {/* DANH SÁCH SẢN PHẨM TRONG GIỎ */}
             <div className="flex flex-col gap-4">
-              {cart.map((item, index) => (
+              {items.map((item) => (
                 <div
-                  key={`${item.productId}-${item.variantId}-${index}`}
+                  key={item.itemId ?? item.variantId}
                   className="flex gap-4 border border-[#e4dfd2] bg-[#fbf8ef] p-4"
                 >
                   <div className="h-24 w-24 flex-shrink-0 overflow-hidden bg-[#eee8da]">
@@ -242,7 +188,7 @@ export default function CartPage() {
 
                       <button
                         type="button"
-                        onClick={() => removeItem(index)}
+                        onClick={() => removeItem(item)}
                         className="flex h-8 w-8 items-center justify-center text-[#a3a58f] transition hover:text-[#b3442f]"
                         aria-label="Xóa sản phẩm"
                       >
@@ -254,7 +200,7 @@ export default function CartPage() {
                       <div className="flex items-center">
                         <button
                           type="button"
-                          onClick={() => updateQuantity(index, Number(item.quantity) - 1)}
+                          onClick={() => updateQuantity(item, Number(item.quantity) - 1)}
                           className="flex h-8 w-8 items-center justify-center border border-[#d8d0bd] bg-white text-[#53633c] transition hover:bg-[#eee8d9]"
                           aria-label="Giảm số lượng"
                         >
@@ -265,7 +211,7 @@ export default function CartPage() {
                         </div>
                         <button
                           type="button"
-                          onClick={() => updateQuantity(index, Number(item.quantity) + 1)}
+                          onClick={() => updateQuantity(item, Number(item.quantity) + 1)}
                           className="flex h-8 w-8 items-center justify-center border border-[#d8d0bd] bg-white text-[#53633c] transition hover:bg-[#eee8d9]"
                           aria-label="Tăng số lượng"
                         >
@@ -295,8 +241,8 @@ export default function CartPage() {
               <h2 className="font-serif text-lg font-semibold text-[#344723]">Tóm tắt đơn hàng</h2>
 
               <div className="mt-4 flex items-center justify-between border-t border-[#e1daca] pt-4 text-sm">
-                <span className="text-[#6f715f]">Tạm tính ({cartCount} sản phẩm)</span>
-                <span className="font-medium">{formatPrice(total)}</span>
+                <span className="text-[#6f715f]">Tạm tính ({totalCount} sản phẩm)</span>
+                <span className="font-medium">{formatPrice(totalPrice)}</span>
               </div>
 
               <div className="mt-2 flex items-center justify-between text-sm">
@@ -306,7 +252,7 @@ export default function CartPage() {
 
               <div className="mt-4 flex items-center justify-between border-t border-[#e1daca] pt-4">
                 <span className="font-serif text-base font-semibold text-[#344723]">Tổng cộng</span>
-                <span className="font-serif text-xl font-semibold text-[#9b7130]">{formatPrice(total)}</span>
+                <span className="font-serif text-xl font-semibold text-[#9b7130]">{formatPrice(totalPrice)}</span>
               </div>
 
               <button
@@ -318,12 +264,14 @@ export default function CartPage() {
               </button>
 
               <p className="mt-3 text-center text-[11px] text-[#a3a58f]">
-                Chức năng đặt hàng sẽ hoàn thiện sau khi có đăng nhập tài khoản.
+                Chức năng đặt hàng sẽ hoàn thiện ở bước tiếp theo.
               </p>
             </div>
           </div>
         )}
       </section>
+
+      <Footer />
     </main>
   );
 }
