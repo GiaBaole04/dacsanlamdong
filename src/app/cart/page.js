@@ -255,13 +255,13 @@ export default function CartPage() {
                 <span className="font-serif text-xl font-semibold text-[#9b7130]">{formatPrice(totalPrice)}</span>
               </div>
 
-              <button
-                type="button"
+              <Link
+                href="/checkout"
                 className="mt-6 flex h-14 w-full items-center justify-center gap-3 bg-[#344723] text-sm font-semibold text-white transition hover:bg-[#263719]"
               >
                 Tiến hành đặt hàng
                 <ArrowRight className="h-4 w-4" />
-              </button>
+              </Link>
 
               <p className="mt-3 text-center text-[11px] text-[#a3a58f]">
                 Chức năng đặt hàng sẽ hoàn thiện ở bước tiếp theo.

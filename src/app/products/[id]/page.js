@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useCart } from "@/hooks/useCart";
@@ -106,6 +106,7 @@ function getStartingPrice(product) {
 export default function ProductDetailPage() {
   const params = useParams();
   const productId = params?.id;
+  const router = useRouter();
   const { addItem } = useCart();
 
   const [product, setProduct] = useState(null);
@@ -191,6 +192,28 @@ export default function ProductDetailPage() {
     }
   }
 
+  function handleBuyNow() {
+  if (!product || !selectedVariant) return;
+
+  const checkoutItem = {
+    productId: product.id,
+    name: product.name,
+    image_url: product.image_url,
+    category: product.category,
+    region: product.region,
+    variantId: selectedVariant.id ?? null,
+    variantName: selectedVariant.variant_name ?? "",
+    price: Number(selectedVariant.price ?? 0),
+    quantity,
+  };
+
+  sessionStorage.setItem(
+    "checkoutItem",
+    JSON.stringify(checkoutItem)
+  );
+
+  router.push("/checkout?buyNow=1");
+}
   /* =========================
      LOADING
   ========================= */
@@ -407,6 +430,7 @@ export default function ProductDetailPage() {
 
               <button
                 type="button"
+                onClick={handleBuyNow}
                 className="flex h-14 flex-1 items-center justify-center gap-3 border border-[#b08b43] bg-[#b08b43] px-6 text-sm font-semibold text-white transition hover:bg-[#956d2e]"
               >
                 Mua ngay
