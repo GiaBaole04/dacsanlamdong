@@ -7,6 +7,7 @@ export async function GET() {
       SELECT p.id, p.name, p.description, p.region, p.image_note, p.image_url, c.name AS category
       FROM products p
       JOIN categories c ON p.category_id = c.id
+      WHERE p.is_active = 1
     `);
 
     const [variants] = await pool.query('SELECT * FROM product_variants');

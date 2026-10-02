@@ -28,6 +28,15 @@ function LogoutIcon({ className = "h-4 w-4" }) {
   );
 }
 
+function ReceiptIcon({ className = "h-4 w-4" }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z" />
+      <path d="M9 8h6M9 12h6" />
+    </svg>
+  );
+}
+
 function DashboardIcon({ className = "h-4 w-4" }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -175,6 +184,16 @@ export default function UserMenu({ variant = "text" }) {
               {ROLE_LABEL[user.role] || "Thành viên"}
             </div>
           </div>
+
+          <Link
+            href="/orders"
+            role="menuitem"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#4d513e] transition hover:bg-[#f1eadb] hover:text-[#344723]"
+          >
+            <ReceiptIcon />
+            Đơn hàng của tôi
+          </Link>
 
           {canManage && (
             <Link

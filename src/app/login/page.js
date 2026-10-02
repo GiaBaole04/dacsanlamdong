@@ -105,7 +105,12 @@ export default function LoginPage() {
       // Báo cho các component khác (nếu có theo dõi trạng thái đăng nhập) biết vừa đăng nhập
       window.dispatchEvent(new Event("authUpdated"));
 
-      router.push("/");
+      // Quay lại trang đang định vào (?next=/checkout...). Chỉ nhận đường dẫn nội bộ,
+      // chặn dạng "//trang-khac.com" để không bị lợi dụng chuyển hướng ra ngoài.
+      const next = new URLSearchParams(window.location.search).get("next");
+      const target = next && next.startsWith("/") && !next.startsWith("//") ? next : "/";
+
+      router.push(target);
       router.refresh();
     } catch (err) {
       setNoticeType("error");

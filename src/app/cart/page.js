@@ -263,9 +263,11 @@ export default function CartPage() {
                 <ArrowRight className="h-4 w-4" />
               </Link>
 
-              <p className="mt-3 text-center text-[11px] text-[#a3a58f]">
-                Chức năng đặt hàng sẽ hoàn thiện ở bước tiếp theo.
-              </p>
+              {isGuest && (
+                <p className="mt-3 text-center text-[11px] text-[#a3a58f]">
+                  Bạn sẽ được yêu cầu đăng nhập để hoàn tất đặt hàng.
+                </p>
+              )}
             </div>
           </div>
         )}
