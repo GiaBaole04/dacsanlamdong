@@ -1,13 +1,12 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  BANK_INFO,
   ORDER_STATUS,
   PAYMENT_LABEL,
   PAYMENT_STATUS_LABEL,
@@ -58,6 +57,119 @@ const STEPS = [
   { key: "shipped", label: "Đang giao" },
   { key: "delivered", label: "Đã giao" },
 ];
+
+function CopyButton({ value, label }) {
+  const [copied, setCopied] = useState(false);
+  const timer = useRef(null);
+
+  useEffect(() => () => clearTimeout(timer.current), []);
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(String(value));
+      setCopied(true);
+      clearTimeout(timer.current);
+      timer.current = setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Trình duyệt không cho sao chép: người dùng tự chép thủ công
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      aria-label={`Sao chép ${label}`}
+      className="ml-3 border border-[#d9c58a] bg-white px-2.5 py-1 text-[11px] font-semibold text-[#6b551f] transition hover:border-[#344723] hover:text-[#344723]"
+    >
+      {copied ? "Đã chép" : "Sao chép"}
+    </button>
+  );
+}
+
+function BankTransferBox({ transfer }) {
+  return (
+    <section className="mt-6 border border-[#e8d9ae] bg-[#fbf4dd] px-5 py-6" data-testid="bank-box">
+      <h2 className="font-serif text-xl font-semibold text-[#6b551f]">Thanh toán bằng chuyển khoản</h2>
+      <p className="mt-1 text-sm leading-6 text-[#7d6a35]">
+        Quét mã QR bằng MoMo hoặc ứng dụng ngân hàng. Số tiền và nội dung được điền sẵn, vui lòng không chỉnh sửa.
+      </p>
+
+      {transfer.isSample && (
+        <p
+          className="mt-4 border border-[#e6cfc4] bg-[#faf0ea] px-4 py-3 text-[13px] leading-5 text-[#a04a2e]"
+          data-testid="sample-warning"
+        >
+          Đây là tài khoản <strong>mẫu</strong> dùng để minh họa. Vui lòng <strong>không chuyển tiền thật</strong>.
+        </p>
+      )}
+
+      <div className="mt-5 grid gap-6 md:grid-cols-[240px_1fr]">
+        <div>
+          <img
+            src={transfer.qrDataUrl}
+            alt="Mã QR chuyển khoản"
+            className="h-60 w-60 border border-[#e8d9ae] bg-white p-2"
+          />
+          <a
+            href={transfer.qrDataUrl}
+            download={`QR-${transfer.content}.png`}
+            className="mt-3 inline-block text-sm font-semibold text-[#344723] underline underline-offset-4 hover:text-[#8c7040]"
+          >
+            Tải ảnh QR
+          </a>
+        </div>
+
+        <dl className="space-y-4 text-sm">
+          <div>
+            <dt className="text-xs text-[#9a8650]">Ngân hàng</dt>
+            <dd className="font-medium">{transfer.bankName}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-[#9a8650]">Số tài khoản</dt>
+            <dd className="flex items-center font-medium">
+              {transfer.accountNumber}
+              <CopyButton value={transfer.accountNumber} label="số tài khoản" />
+            </dd>
+          </div>
+          {transfer.accountName && (
+            <div>
+              <dt className="text-xs text-[#9a8650]">Chủ tài khoản</dt>
+              <dd className="font-medium">{transfer.accountName}</dd>
+            </div>
+          )}
+          <div>
+            <dt className="text-xs text-[#9a8650]">Số tiền</dt>
+            <dd className="flex items-center font-semibold text-[#9b7130]">
+              {formatPrice(transfer.amount)}
+              <CopyButton value={transfer.amount} label="số tiền" />
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs text-[#9a8650]">Nội dung chuyển khoản</dt>
+            <dd className="flex items-center font-semibold tracking-wide">
+              {transfer.content}
+              <CopyButton value={transfer.content} label="nội dung" />
+            </dd>
+          </div>
+        </dl>
+      </div>
+
+      <ol className="mt-6 list-decimal space-y-1.5 border-t border-[#e8d9ae] pt-5 pl-5 text-[13px] leading-5 text-[#7d6a35]">
+        <li>Mở MoMo hoặc ứng dụng ngân hàng của bạn và chọn quét mã QR.</li>
+        <li>
+          Quét mã trên màn hình. Nếu đang xem bằng chính điện thoại này, hãy tải ảnh QR về rồi chọn quét từ ảnh trong
+          thư viện (có trong MoMo và nhiều ứng dụng ngân hàng).
+        </li>
+        <li>Kiểm tra đúng số tiền và nội dung rồi xác nhận chuyển tiền.</li>
+      </ol>
+
+      <p className="mt-4 text-[12px] leading-5 text-[#9a8650]">
+        Đơn hàng được xử lý sau khi cửa hàng kiểm tra và nhận được tiền.
+      </p>
+    </section>
+  );
+}
 
 function OrderDetailContent() {
   const router = useRouter();
@@ -230,41 +342,17 @@ function OrderDetailContent() {
               )}
             </div>
 
-            {order.paymentMethod === "bank" &&
+            {order.transfer ? (
+              <BankTransferBox transfer={order.transfer} />
+            ) : (
+              order.paymentMethod === "bank" &&
               order.paymentStatus === "unpaid" &&
               order.status !== "cancelled" && (
-                <div className="mt-6 border border-[#e8d9ae] bg-[#fbf4dd] px-5 py-5" data-testid="bank-box">
-                  <h2 className="font-serif text-lg font-semibold text-[#6b551f]">
-                    Hướng dẫn chuyển khoản
-                  </h2>
-                  <p className="mt-1 text-sm text-[#7d6a35]">
-                    Vui lòng chuyển khoản đúng số tiền và nội dung bên dưới. Đơn hàng sẽ được xử lý sau khi cửa hàng
-                    nhận được tiền.
-                  </p>
-                  <dl className="mt-4 grid gap-x-8 gap-y-3 text-sm sm:grid-cols-2">
-                    <div>
-                      <dt className="text-xs text-[#9a8650]">Ngân hàng</dt>
-                      <dd className="font-medium">{BANK_INFO.bankName}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-xs text-[#9a8650]">Số tài khoản</dt>
-                      <dd className="font-medium">{BANK_INFO.accountNumber}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-xs text-[#9a8650]">Chủ tài khoản</dt>
-                      <dd className="font-medium">{BANK_INFO.accountName}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-xs text-[#9a8650]">Số tiền</dt>
-                      <dd className="font-semibold text-[#9b7130]">{formatPrice(order.totalAmount)}</dd>
-                    </div>
-                    <div className="sm:col-span-2">
-                      <dt className="text-xs text-[#9a8650]">Nội dung chuyển khoản</dt>
-                      <dd className="font-semibold tracking-wide">{formatOrderCode(order.id)}</dd>
-                    </div>
-                  </dl>
+                <div className="mt-6 border border-[#e8d9ae] bg-[#fbf4dd] px-5 py-4 text-sm text-[#7d6a35]" data-testid="bank-missing">
+                  Chưa hiển thị được thông tin chuyển khoản. Vui lòng liên hệ cửa hàng để được hướng dẫn thanh toán.
                 </div>
-              )}
+              )
+            )}
 
             <div className="mt-8 grid gap-8 lg:grid-cols-[1.5fr_1fr]">
               {/* SẢN PHẨM */}

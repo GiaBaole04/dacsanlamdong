@@ -22,14 +22,6 @@ export function calcShippingFee(subtotal) {
   return Number(subtotal) > FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE;
 }
 
-// THÔNG TIN MẪU để hiển thị hướng dẫn chuyển khoản.
-// Khi chạy thật hãy thay bằng tài khoản ngân hàng thật của cửa hàng.
-export const BANK_INFO = {
-  bankName: "Ngân hàng mẫu (thay bằng ngân hàng thật)",
-  accountNumber: "0123456789",
-  accountName: "DAC SAN LAM DONG",
-};
-
 export const PAYMENT_STATUS_LABEL = {
   unpaid: "Chưa thanh toán",
   paid: "Đã thanh toán",

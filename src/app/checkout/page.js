@@ -351,7 +351,7 @@ function CheckoutContent() {
                     {
                       value: "bank",
                       title: "Chuyển khoản ngân hàng",
-                      desc: "Sau khi đặt hàng, bạn sẽ nhận thông tin tài khoản và nội dung chuyển khoản. Đơn được xử lý sau khi cửa hàng nhận được tiền.",
+                      desc: "Sau khi đặt hàng, bạn nhận mã QR đã điền sẵn số tiền và nội dung, quét được bằng MoMo hoặc ứng dụng ngân hàng. Đơn được xử lý sau khi cửa hàng nhận được tiền.",
                     },
                   ].map((option) => {
                     const selected = paymentMethod === option.value;

@@ -1,6 +1,56 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
+import { getShopBank } from '@/lib/shopBank';
+import { buildVietQR, orderTransferContent } from '@/lib/vietqr';
 import { NextResponse } from 'next/server';
+import QRCode from 'qrcode';
+
+// Chỉ đơn chuyển khoản, chưa thanh toán và chưa hủy mới cần mã QR.
+// Mã QR được tạo ở máy chủ từ số tiền THẬT của đơn, khách không sửa được.
+async function buildTransfer(order) {
+  if (
+    order.payment_method !== 'bank' ||
+    order.payment_status !== 'unpaid' ||
+    order.status === 'cancelled'
+  ) {
+    return null;
+  }
+
+  const bank = getShopBank();
+
+  if (!bank) {
+    return null;
+  }
+
+  try {
+    const amount = Math.round(Number(order.total_amount));
+    const content = orderTransferContent(order.id);
+    const payload = buildVietQR({
+      bin: bank.bin,
+      accountNumber: bank.accountNumber,
+      amount,
+      content,
+    });
+    const qrDataUrl = await QRCode.toDataURL(payload, {
+      errorCorrectionLevel: 'M',
+      margin: 2,
+      width: 480,
+    });
+
+    return {
+      bankName: bank.bankName,
+      accountNumber: bank.accountNumber,
+      accountName: bank.accountName,
+      amount,
+      content,
+      qrDataUrl,
+      isSample: bank.isSample,
+    };
+  } catch (error) {
+    console.error('build transfer error:', error);
+    return null;
+  }
+}
 
 // Chi tiết 1 đơn hàng. Chỉ chủ đơn (hoặc admin/nhân viên) mới xem được.
 export async function GET(request, { params }) {
@@ -36,6 +86,8 @@ export async function GET(request, { params }) {
     [orderId]
   );
 
+  const transfer = await buildTransfer(order);
+
   return NextResponse.json({
     order: {
       id: order.id,
@@ -49,6 +101,7 @@ export async function GET(request, { params }) {
       shippingFee: Number(order.shipping_fee),
       subtotal: Number(order.total_amount) - Number(order.shipping_fee),
       totalAmount: Number(order.total_amount),
+      transfer,
       createdAt: order.created_at,
       items: items.map((i) => ({
         id: i.id,
