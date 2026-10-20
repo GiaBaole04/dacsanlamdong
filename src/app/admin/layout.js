@@ -4,11 +4,14 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { LandscapeScene } from "@/components/Landscape";
 
 const NAV = [
   { href: "/admin", label: "Tổng quan", exact: true },
   { href: "/admin/orders", label: "Đơn hàng" },
   { href: "/admin/products", label: "Sản phẩm" },
+  { href: "/admin/stories", label: "Câu chuyện" },
+  { href: "/admin/users", label: "Tài khoản", adminOnly: true },
 ];
 
 const ROLE_LABEL = { admin: "Quản trị viên", staff: "Nhân viên" };
@@ -19,6 +22,9 @@ export default function AdminLayout({ children }) {
   const { user, loading } = useAuth();
 
   const allowed = user && (user.role === "admin" || user.role === "staff");
+
+  // Mục "Tài khoản" chỉ hiện với quản trị viên
+  const navItems = NAV.filter((item) => !item.adminOnly || user?.role === "admin");
 
   useEffect(() => {
     if (!loading && !user) {
@@ -73,7 +79,7 @@ export default function AdminLayout({ children }) {
         </div>
 
         <nav className="flex-1 space-y-1 px-3">
-          {NAV.map((item) => (
+          {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -87,6 +93,10 @@ export default function AdminLayout({ children }) {
             </Link>
           ))}
         </nav>
+
+        <div className="relative mx-3 mb-4 h-24 overflow-hidden opacity-60" aria-hidden="true">
+          <LandscapeScene theme="highland" />
+        </div>
 
         <div className="border-t border-white/10 px-6 py-5 text-sm">
           <div className="truncate font-medium text-white">{user.name}</div>
@@ -115,7 +125,7 @@ export default function AdminLayout({ children }) {
             </button>
           </div>
           <nav className="-mx-1 mt-3 flex gap-1 overflow-x-auto">
-            {NAV.map((item) => (
+            {navItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}

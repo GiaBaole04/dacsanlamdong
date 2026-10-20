@@ -35,7 +35,7 @@ function slugify(name) {
   return slug || 'anh';
 }
 
-// Tải ảnh sản phẩm lên thư mục public/images/products (dùng khi chạy local / demo)
+// Tải ảnh lên thư mục public/images/products hoặc public/images/stories (dùng khi chạy local / demo)
 export async function POST(request) {
   const guard = await requireStaff();
   if (guard.response) return guard.response;
@@ -64,11 +64,15 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Chỉ nhận ảnh JPG, PNG hoặc WEBP.' }, { status: 400 });
   }
 
+  // Thư mục lưu ảnh: sản phẩm (mặc định) hoặc câu chuyện (?folder=stories). Giá trị khác đều về "products".
+  const folderParam = new URL(request.url ?? 'http://localhost/', 'http://localhost').searchParams.get('folder');
+  const folder = folderParam === 'stories' ? 'stories' : 'products';
+
   const filename = `${slugify(file.name)}-${randomBytes(3).toString('hex')}.${type}`;
-  const dir = path.join(process.cwd(), 'public', 'images', 'products');
+  const dir = path.join(process.cwd(), 'public', 'images', folder);
 
   await mkdir(dir, { recursive: true });
   await writeFile(path.join(dir, filename), bytes);
 
-  return NextResponse.json({ ok: true, url: `/images/products/${filename}` }, { status: 201 });
+  return NextResponse.json({ ok: true, url: `/images/${folder}/${filename}` }, { status: 201 });
 }
