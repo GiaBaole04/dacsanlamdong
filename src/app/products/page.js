@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useCartCount } from '@/hooks/useCartCount';
@@ -204,7 +204,7 @@ function ProductCard({ product }) {
    PAGE
 ========================================================= */
 
-export default function ProductsPage() {
+function ProductsContent() {
   const searchParams = useSearchParams();
 
   const [products, setProducts] = useState([]);
@@ -896,5 +896,13 @@ export default function ProductsPage() {
       <Footer />
 
     </main>
+  );
+}
+
+export default function ProductsPage() {
+  return (
+    <Suspense fallback={null}>
+      <ProductsContent />
+    </Suspense>
   );
 }
