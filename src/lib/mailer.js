@@ -23,3 +23,19 @@ export async function sendOtpEmail(to, otp) {
     `,
   });
 }
+
+export async function sendResetOtpEmail(to, otp) {
+  await transporter.sendMail({
+    from: `"Đặc Sản Lâm Đồng" <${process.env.GMAIL_USER}>`,
+    to,
+    subject: 'Mã đặt lại mật khẩu',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
+        <h2 style="color:#344723; margin-bottom: 8px;">Đặt lại mật khẩu Đặc Sản Lâm Đồng</h2>
+        <p style="color:#4d513e;">Mã xác thực (OTP) để đặt lại mật khẩu của bạn là:</p>
+        <p style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color:#344723; margin: 16px 0;">${otp}</p>
+        <p style="color:#6f715f; font-size: 13px;">Mã có hiệu lực trong <strong>3 phút</strong>. Nếu bạn không yêu cầu đặt lại mật khẩu, hãy bỏ qua email này và không chia sẻ mã cho bất kỳ ai.</p>
+      </div>
+    `,
+  });
+}

@@ -2,6 +2,7 @@
 
 @theme {
   --font-serif: var(--font-lora), Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-be-vietnam), "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
 }
 
 :root {
@@ -22,7 +23,9 @@ body {
   padding: 0;
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-be-vietnam), "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 button,
@@ -59,4 +62,184 @@ img {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #344723;
+}
+
+/* =========================================================
+   HIỆU ỨNG CHUYỂN ĐỘNG (trang chủ)
+   Tất cả đều tự tắt khi người dùng bật "giảm chuyển động" trong hệ điều hành.
+========================================================= */
+
+/* Hiện dần khi cuộn tới (dùng với component Reveal) */
+.reveal {
+  opacity: 0;
+  transform: translate3d(0, 28px, 0);
+  transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* Chữ ở hero trượt lên lần lượt khi vừa vào trang */
+.fade-up {
+  opacity: 0;
+  animation: fade-up 1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 26px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Tranh nền hero phóng to rất chậm, tạo cảm giác "thở" */
+.kenburns {
+  animation: kenburns 28s ease-in-out infinite alternate;
+  transform-origin: 60% 70%;
+}
+
+@keyframes kenburns {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.09);
+  }
+}
+
+/* Sương trôi ngang qua đồi thông */
+.mist-drift {
+  animation: mist-drift 26s ease-in-out infinite alternate;
+}
+
+.mist-drift-slow {
+  animation: mist-drift 38s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes mist-drift {
+  from {
+    transform: translate3d(-9%, 0, 0);
+  }
+  to {
+    transform: translate3d(9%, 0, 0);
+  }
+}
+
+/* Vầng sáng mặt trời nhấp nhẹ */
+.sun-pulse {
+  animation: sun-pulse 7s ease-in-out infinite;
+}
+
+@keyframes sun-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.95;
+    transform: scale(1.12);
+  }
+}
+
+/* Chim bay ngang bầu trời */
+.bird {
+  position: absolute;
+  left: -60px;
+  animation: bird-fly 46s linear infinite;
+  opacity: 0;
+}
+
+@keyframes bird-fly {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0;
+  }
+  6% {
+    opacity: 0.8;
+  }
+  50% {
+    transform: translate3d(55vw, -26px, 0);
+  }
+  94% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate3d(112vw, 10px, 0);
+    opacity: 0;
+  }
+}
+
+/* Chấm gợi ý "cuộn xuống" */
+.scroll-hint {
+  animation: scroll-hint 2.2s ease-in-out infinite;
+}
+
+@keyframes scroll-hint {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0.4;
+  }
+  50% {
+    transform: translate3d(0, 8px, 0);
+    opacity: 1;
+  }
+}
+
+/* Ánh sáng quét ngang trên nút chính */
+.shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.shine::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.55) 50%, transparent 70%);
+  transform: translateX(-120%);
+  animation: shine 4.5s ease-in-out infinite;
+}
+
+@keyframes shine {
+  0%,
+  55% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .fade-up {
+    opacity: 1;
+    transform: none;
+    transition: none;
+    animation: none;
+  }
+
+  .kenburns,
+  .mist-drift,
+  .mist-drift-slow,
+  .sun-pulse,
+  .bird,
+  .scroll-hint,
+  .shine::after {
+    animation: none;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
 }

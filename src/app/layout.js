@@ -1,10 +1,18 @@
-import { Lora } from "next/font/google";
+import { Lora, Be_Vietnam_Pro } from "next/font/google";
 import "./globals.css";
 
+// Font tiêu đề (có chân, sang trọng)
 const lora = Lora({
   subsets: ["vietnamese", "latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-lora",
+});
+
+// Font nội dung: thiết kế riêng cho tiếng Việt nên dấu rõ, dễ đọc ở cỡ chữ nhỏ
+const beVietnam = Be_Vietnam_Pro({
+  subsets: ["vietnamese", "latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-be-vietnam",
 });
 
 export const metadata = {
@@ -15,7 +23,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="vi" className={lora.variable}>
+    <html lang="vi" className={`${lora.variable} ${beVietnam.variable}`}>
       <body>{children}</body>
     </html>
   );
