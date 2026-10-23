@@ -120,6 +120,9 @@ export default function ProductDetailPage() {
   const [addedToCart, setAddedToCart] = useState(false);
   const [addingToCart, setAddingToCart] = useState(false);
 
+  // Dữ liệu "khách mua sản phẩm này cũng mua" (từ lịch sử đơn hàng)
+  const [alsoBought, setAlsoBought] = useState({ productId: null, totalOrders: 0, items: [] });
+
   useEffect(() => {
     if (!productId) return;
 
@@ -160,11 +163,52 @@ export default function ProductDetailPage() {
     loadProduct();
   }, [productId]);
 
+  // Tải thống kê "cũng mua". Lỗi hoặc chưa có đơn thì chỉ ẩn mục này, không ảnh hưởng trang.
+  useEffect(() => {
+    if (!productId) return;
+    let cancelled = false;
+
+    async function loadAlsoBought() {
+      try {
+        const response = await fetch(`/api/products/${productId}/also-bought`, { cache: "no-store" });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (!cancelled && Array.isArray(data.items)) {
+          setAlsoBought({ productId, totalOrders: data.totalOrders || 0, items: data.items });
+        }
+      } catch (err) {
+        console.error("Lỗi tải gợi ý cũng mua:", err);
+      }
+    }
+
+    loadAlsoBought();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [productId]);
+
+  // Ghép thống kê với thông tin sản phẩm đã tải
+  const alsoBoughtProducts = useMemo(() => {
+    // Bỏ dữ liệu của sản phẩm khác (khi vừa chuyển sang xem sản phẩm mới, dữ liệu mới chưa tải xong)
+    if (String(alsoBought.productId) !== String(productId)) return [];
+    return alsoBought.items
+      .map((entry) => {
+        const item = allProducts.find((p) => String(p.id) === String(entry.productId));
+        return item ? { product: item, ...entry } : null;
+      })
+      .filter(Boolean);
+  }, [alsoBought, allProducts, productId]);
+
   // Gợi ý sản phẩm tương tự (TF-IDF + cosine, kết hợp danh mục, vùng, giá). Xem src/lib/similarity.js
+  // Bỏ các sản phẩm đã nằm trong mục "cũng mua" để hai mục không lặp lại nhau.
   const similarProducts = useMemo(() => {
     if (!product) return [];
-    return getSimilarProducts(product, allProducts, 4);
-  }, [allProducts, product]);
+    const taken = new Set(alsoBoughtProducts.map((entry) => String(entry.product.id)));
+    return getSimilarProducts(product, allProducts, 4 + taken.size)
+      .filter((entry) => !taken.has(String(entry.product.id)))
+      .slice(0, 4);
+  }, [allProducts, product, alsoBoughtProducts]);
 
   const increaseQuantity = () => {
     const maxStock = selectedVariant?.stock;
@@ -501,6 +545,64 @@ export default function ProductDetailPage() {
           </div>
         </div>
       </section>
+
+      {/* KHÁCH MUA SẢN PHẨM NÀY CŨNG MUA (từ lịch sử đơn hàng) */}
+      {alsoBoughtProducts.length > 0 && (
+        <section className="mx-auto max-w-[1400px] px-6 pt-14 lg:px-10 lg:pt-20">
+          <div className="mb-8">
+            <div className="flex items-center gap-3">
+              <span className="h-px w-8 bg-[#b08b43]" />
+              <span className="text-[10px] font-semibold uppercase tracking-[0.25em] text-[#8c7040]">
+                Dựa trên đơn hàng thực tế
+              </span>
+            </div>
+            <h2 className="mt-3 font-serif text-3xl font-semibold text-[#344723]">
+              Khách mua sản phẩm này cũng mua
+            </h2>
+          </div>
+
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {alsoBoughtProducts.map(({ product: item, ordersTogether, confidence }) => {
+              const price = getStartingPrice(item);
+              return (
+                <Link href={`/products/${item.id}`} key={item.id} className="group block">
+                  <div className="relative overflow-hidden bg-[#ebe5d7]">
+                    {item.image_url ? (
+                      <img
+                        src={item.image_url}
+                        alt={item.name}
+                        className="aspect-[4/4.3] w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+                      />
+                    ) : (
+                      <div className="flex aspect-[4/4.3] items-center justify-center text-[#858878]">
+                        <LeafIcon className="h-8 w-8" />
+                      </div>
+                    )}
+                    <div className="absolute left-3 top-3 rounded-full bg-[#8c7040]/95 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur-sm">
+                      {Math.round(confidence * 100)}% khách mua cùng
+                    </div>
+                  </div>
+                  <div className="pt-4">
+                    {item.region && (
+                      <div className="flex items-center gap-1.5 text-[11px] text-[#858878]">
+                        <MapPinIcon className="h-3.5 w-3.5" />
+                        {item.region}
+                      </div>
+                    )}
+                    <h3 className="mt-2 font-serif text-lg font-semibold text-[#344723] transition group-hover:text-[#8c7040]">
+                      {item.name}
+                    </h3>
+                    <div className="mt-2 text-sm font-medium text-[#9b7130]">Giá từ {formatPrice(price)}</div>
+                    <div className="mt-2 text-[12px] text-[#858878]">
+                      Có trong {ordersTogether} đơn cùng sản phẩm này
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* RELATED PRODUCTS */}
       {similarProducts.length > 0 && (

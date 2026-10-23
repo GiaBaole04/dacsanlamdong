@@ -549,7 +549,7 @@ export default function HomePage() {
       {/* =====================================================
           BA TỈNH - MỘT LÂM ĐỒNG
       ===================================================== */}
-      <section id="ba-tinh" className="scroll-mt-4 mx-auto max-w-[1400px] px-7 py-20 lg:px-10 lg:py-28">
+      <section id="ba-tinh" className="scroll-mt-20 mx-auto max-w-[1400px] px-7 py-20 lg:px-10 lg:py-28">
         <Reveal>
           <SectionHeading
             eyebrow="Ba tỉnh · Một Lâm Đồng"

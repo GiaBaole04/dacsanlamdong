@@ -12,5 +12,4 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Đọc PROGRESS.md trước, chỉ đọc những file liên quan trực tiếp đến yêu cầu. Không đọc toàn bộ repo.
 - Chỉ đọc tài liệu Next.js trong node_modules khi thật sự cần cho chức năng đang làm.
 - Ghi rõ đường dẫn đầy đủ, file nào mới, file nào sửa.
-
-- Schema database nằm ở sqldoan-moi.sql, không tự đoán tên bảng và cột.
+- Schema database do người dùng gửi riêng trong chat, không có trên GitHub. Cần tên bảng/cột mà chưa có thì hỏi, không tự đoán.
