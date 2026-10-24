@@ -14,6 +14,7 @@ import {
   ThemeIcon,
 } from '@/components/Landscape';
 import { regionTheme } from '@/lib/storyFormat';
+import { variantSummary } from '@/lib/variantLabel';
 import {
   FREE_SHIPPING_THRESHOLD,
   SHIPPING_FEE,
@@ -40,7 +41,7 @@ function categoryEmoji(category = '') {
   return '🌿';
 }
 
-// Giá thấp nhất trong các quy cách (khớp với nhãn "Giá từ")
+// Giá thấp nhất trong các lựa chọn khối lượng (khớp với nhãn "Giá từ")
 function minPrice(product) {
   const prices = (product.variants || [])
     .map((variant) => Number(variant.price))
@@ -262,8 +263,11 @@ function ProductCard({ product }) {
             </div>
 
             {variantCount > 1 && (
-              <span className="rounded-full bg-[#f3efe0] px-3 py-1 text-[11px] font-medium text-[#6b6850]">
-                {variantCount} quy cách
+              <span
+                className="max-w-[58%] truncate rounded-full bg-[#f3efe0] px-3 py-1 text-[11px] font-medium text-[#6b6850]"
+                title={product.variants.map((v) => v.variant_name).join(', ')}
+              >
+                {variantSummary(product.variants)}
               </span>
             )}
           </div>

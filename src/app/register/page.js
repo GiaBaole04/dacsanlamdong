@@ -3,19 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import AuthShell from "@/components/AuthShell";
 
 /* =========================
    ICONS
 ========================= */
-
-function LeafIcon({ className = "h-5 w-5" }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-      <path d="M20 4C11 4 5 7 5 13c0 4 3 7 7 7 6 0 8-6 8-16Z" />
-      <path d="M5 20c2.5-4.5 6-7.5 11-10" />
-    </svg>
-  );
-}
 
 function UserIcon({ className = "h-[18px] w-[18px]" }) {
   return (
@@ -248,82 +240,11 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="grid min-h-screen bg-[#f8f5ec] text-[#292c18] lg:grid-cols-[1.05fr_1fr]">
-      <div className="relative hidden overflow-hidden bg-[#243219] lg:block">
-        <svg
-          className="absolute inset-0 h-full w-full opacity-[0.08]"
-          viewBox="0 0 600 900"
-          preserveAspectRatio="xMidYMid slice"
-          aria-hidden="true"
-        >
-          {Array.from({ length: 14 }).map((_, i) => (
-            <path
-              key={i}
-              d="M0 30C40 5 90 5 130 30"
-              stroke="#fff"
-              strokeWidth="2"
-              fill="none"
-              transform={`translate(${(i % 4) * 170 - 40} ${Math.floor(i / 4) * 220 + 20}) rotate(${(i * 53) % 360})`}
-            />
-          ))}
-        </svg>
-
-        <div className="relative flex h-full flex-col justify-between p-10 xl:p-14">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#c8b98d]/60 text-[#e8dcc0]">
-              <LeafIcon className="h-5 w-5" />
-            </div>
-            <div>
-              <div className="font-serif text-[17px] font-semibold tracking-[0.13em] text-[#f3ecdb]">ĐẶC SẢN</div>
-              <div className="text-[9px] font-medium tracking-[0.3em] text-[#c8b98d]">LÂM ĐỒNG</div>
-            </div>
-          </Link>
-
-          <div className="max-w-md">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[#c8b98d]">
-              Chuyện từ nông trại
-            </span>
-
-            <p className="mt-5 font-serif text-[26px] font-medium leading-[1.4] text-[#f3ecdb] xl:text-[30px]">
-              "Từng trái thanh long ở Hàm Thuận Nam đều được hái đúng độ chín
-              để giữ trọn vị ngọt thanh."
-            </p>
-
-            <div className="mt-6 h-px w-12 bg-[#c8b98d]/60" />
-            <p className="mt-4 text-sm text-[#cfd0bc]">
-              Người trồng thanh long tại Hàm Thuận Nam, Lâm Đồng
-            </p>
-          </div>
-
-          <div className="flex gap-8 text-[#cfd0bc]">
-            <div>
-              <div className="font-serif text-2xl font-semibold text-[#f3ecdb]">18+</div>
-              <div className="text-xs">Sản phẩm</div>
-            </div>
-            <div>
-              <div className="font-serif text-2xl font-semibold text-[#f3ecdb]">6</div>
-              <div className="text-xs">Vùng đặc sản</div>
-            </div>
-            <div>
-              <div className="font-serif text-2xl font-semibold text-[#f3ecdb]">100%</div>
-              <div className="text-xs">Nguồn gốc rõ ràng</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-center px-6 py-14 sm:px-10">
-        <div className="w-full max-w-[380px]">
-          <Link href="/" className="mb-10 flex items-center gap-3 lg:hidden">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#c8b98d] text-[#53633c]">
-              <LeafIcon className="h-5 w-5" />
-            </div>
-            <div>
-              <div className="font-serif text-[17px] font-semibold tracking-[0.13em] text-[#344723]">ĐẶC SẢN</div>
-              <div className="text-[9px] font-medium tracking-[0.3em] text-[#8c7040]">LÂM ĐỒNG</div>
-            </div>
-          </Link>
-
+    <AuthShell
+      eyebrow="Thành viên Đặc Sản Lâm Đồng"
+      title="Tạo tài khoản để đặt hàng và theo dõi đơn dễ dàng"
+      text="Lưu thông tin nhận hàng và theo dõi đơn từ lúc xác nhận đến khi giao thành công."
+    >
           {step === "form" && (
             <>
               <h1 className="font-serif text-[30px] font-semibold leading-tight text-[#344723]">
@@ -528,8 +449,7 @@ export default function RegisterPage() {
               </p>
             </div>
           )}
-        </div>
-      </div>
-    </main>
+
+    </AuthShell>
   );
 }

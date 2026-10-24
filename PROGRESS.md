@@ -23,17 +23,18 @@ Bối cảnh: từ 01/07/2025 ba tỉnh Lâm Đồng, Đắk Nông, Bình Thuậ
 - Gợi ý "khách mua sản phẩm này cũng mua" (luật kết hợp từ lịch sử đơn): `api/products/[id]/also-bought/route.js`, hiển thị ở chi tiết sản phẩm. Tự ẩn khi chưa có đơn.
 
 ## Việc tiếp theo (dự kiến)
-- Chatbot tư vấn đặc sản gọi API mô hình ngôn ngữ (chưa chọn nhà cung cấp; khóa API để trong `.env`, chỉ gọi từ server).
 - Hoàn thiện báo cáo: giải thích thuật toán gợi ý, ghi rõ dữ liệu đơn hàng mẫu (nếu dùng để demo) là dữ liệu tự tạo.
+
+- Chatbot tư vấn đặc sản dùng Gemini (`api/chat/route.js`, `lib/chatbot.js`, `components/ChatWidget.js`, nút chat nổi gắn trong `app/layout.js`). Mô hình chỉ trả MÃ sản phẩm; tên, ảnh, giá luôn lấy lại từ database. Có lọc ngân sách ("dưới 300 nghìn"), giới hạn số lần hỏi theo IP và theo ngày. Biến môi trường trong `.env` (không có trên GitHub): `GEMINI_API_KEY` (bắt buộc), `GEMINI_MODEL` (tùy chọn, mặc định `gemini-3.5-flash-lite`), `CHAT_IP_LIMIT` và `CHAT_DAILY_LIMIT` (tùy chọn). Khóa API chỉ dùng ở server, không để trong biến `NEXT_PUBLIC_`.
 
 ## Cấu trúc `src/` (không gồm admin)
 - `app/page.js` trang chủ · `app/about` giới thiệu · `app/products` danh sách + `[id]` chi tiết · `app/stories` câu chuyện + `[slug]`
 - `app/cart` · `app/checkout` · `app/orders` + `[id]` · `app/login` · `app/register` · `app/forgot-password`
 - `app/api/auth/*` đăng nhập, đăng ký, OTP, quên/đặt lại mật khẩu, `me`, `logout`
-- `app/api/products` (danh sách kèm quy cách) · `app/api/products/[id]/also-bought` · `app/api/stories` · `app/api/cart` + `merge` · `app/api/orders` + `[id]` + `[id]/cancel`
-- `components/`: `Header`, `Footer`, `UserMenu`, `Landscape` (tranh SVG), `Reveal`, `CountUp`, `StoryCard`, `StoryContent`
+- `app/api/products` (danh sách kèm các lựa chọn khối lượng) · `app/api/products/[id]/also-bought` · `app/api/chat` (chatbot Gemini) · `app/api/stories` · `app/api/cart` + `merge` · `app/api/orders` + `[id]` + `[id]/cancel`
+- `components/`: `Header`, `Footer`, `UserMenu`, `Landscape` (tranh SVG), `Reveal`, `CountUp`, `StoryCard`, `StoryContent`, `AuthShell` (khung chung trang đăng nhập/đăng ký/quên mật khẩu), `ChatWidget`
 - `hooks/`: `useAuth`, `useCart`, `useCartCount`
-- `lib/`: `db` (kết nối MariaDB), `auth`, `mailer` (gửi email OTP), `orderRules`, `orderUtils`, `productRules`, `storyRules`, `storyFormat`, `shopBank` + `vietqr` (QR thanh toán), `similarity` (gợi ý tương tự)
+- `lib/`: `db` (kết nối MariaDB), `auth`, `mailer` (gửi email OTP), `orderRules`, `orderUtils`, `productRules`, `storyRules`, `storyFormat`, `shopBank` + `vietqr` (QR thanh toán), `similarity` (gợi ý tương tự), `chatbot` (logic chatbot), `variantLabel` (cách gọi khối lượng/dung tích)
 - `proxy.js` chặn truy cập khu vực quản trị khi chưa đủ quyền
 
 ## Không được sửa (AI khác đang làm)

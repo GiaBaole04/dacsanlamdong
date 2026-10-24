@@ -632,7 +632,7 @@ function OrderDetailContent() {
                         <div className="flex flex-1 flex-col justify-between">
                           <div>
                             <div className="font-serif text-base font-semibold text-[#344723]">{item.productName}</div>
-                            <div className="mt-0.5 text-xs text-[#7a7c6c]">Quy cách: {item.variantName}</div>
+                            <span className="mt-1.5 inline-block rounded-full bg-[#f3efe0] px-2.5 py-0.5 text-[11px] font-medium text-[#6b6850]">{item.variantName}</span>
                           </div>
                           <div className="flex items-center justify-between text-sm">
                             <span className="text-[#7a7c6c]">

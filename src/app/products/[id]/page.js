@@ -7,6 +7,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useCart } from "@/hooks/useCart";
 import { getSimilarProducts } from "@/lib/similarity";
+import { variantGroupLabel } from "@/lib/variantLabel";
 
 /* =========================
    ICONS
@@ -401,7 +402,7 @@ export default function ProductDetailPage() {
             {product.variants?.length > 0 && (
               <div className="mt-8">
                 <div className="mb-3 flex items-center justify-between">
-                  <span className="text-sm font-semibold text-[#344723]">Quy cách</span>
+                  <span className="text-sm font-semibold text-[#344723]">Chọn {variantGroupLabel(product.variants).toLowerCase()}</span>
                   {selectedVariant?.stock !== undefined && (
                     <span className="text-xs text-[#7b7e6d]">Còn {selectedVariant.stock} sản phẩm</span>
                   )}
@@ -421,7 +422,7 @@ export default function ProductDetailPage() {
                           setSelectedVariant(variant);
                           setQuantity(1);
                         }}
-                        className={`min-w-[90px] border px-4 py-3 text-sm transition ${
+                        className={`min-w-[90px] rounded-lg border px-4 py-3 text-sm font-medium transition ${
                           isSelected
                             ? "border-[#344723] bg-[#344723] text-white"
                             : "border-[#d9d1bf] bg-[#fbf8ef] text-[#4d513e] hover:border-[#53633c]"

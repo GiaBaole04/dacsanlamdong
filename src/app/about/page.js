@@ -31,7 +31,7 @@ const REGIONS = [
 
 const STEPS = [
   { title: "Chọn đúng vùng", text: "Mỗi sản phẩm gắn với một vùng sản xuất cụ thể, như cà phê Cầu Đất, trà Bảo Lộc hay nước mắm Phan Thiết." },
-  { title: "Ghi rõ nguồn gốc", text: "Vùng sản xuất, quy cách và giá được hiển thị minh bạch trên từng sản phẩm." },
+  { title: "Ghi rõ nguồn gốc", text: "Vùng sản xuất, khối lượng và giá được hiển thị minh bạch trên từng sản phẩm." },
   { title: "Đặt hàng dễ dàng", text: "Thanh toán khi nhận hàng, hoặc chuyển khoản bằng mã QR qua MoMo và ứng dụng ngân hàng." },
   { title: "Theo dõi đơn hàng", text: "Xem trạng thái đơn ngay trong tài khoản, từ lúc chờ xác nhận đến khi giao thành công." },
 ];

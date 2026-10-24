@@ -55,6 +55,33 @@ function CashIcon({ className = "h-5 w-5" }) {
   );
 }
 
+function BankIcon({ className = "h-5 w-5" }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+      <path d="M3 9.5 12 4l9 5.5" />
+      <path d="M5 10v7M9.5 10v7M14.5 10v7M19 10v7" />
+      <path d="M3.5 19.5h17" />
+    </svg>
+  );
+}
+
+function CheckIcon({ className = "h-3.5 w-3.5" }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+      <path d="m5 12.5 4.5 4.5L19 7.5" />
+    </svg>
+  );
+}
+
+function LockIcon({ className = "h-4 w-4" }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+      <rect x="5" y="10.5" width="14" height="9" rx="1.5" />
+      <path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" />
+    </svg>
+  );
+}
+
 function AlertIcon({ className = "h-4 w-4" }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -82,7 +109,7 @@ function Field({ id, label, error, children }) {
 }
 
 const inputClass =
-  "w-full border bg-[#fbf8ef] px-4 text-sm text-[#292c18] outline-none transition placeholder:text-[#a3a58f] focus:border-[#344723]";
+  "w-full rounded-lg border bg-white px-4 text-sm text-[#292c18] outline-none transition placeholder:text-[#a3a58f] focus:border-[#344723] focus:ring-2 focus:ring-[#344723]/15";
 
 /* =========================
    PAGE
@@ -252,6 +279,29 @@ function CheckoutContent() {
           Điền thông tin nhận hàng để chúng tôi chuẩn bị đơn hàng cho bạn.
         </p>
 
+        <ol className="mt-8 flex items-center gap-3 text-[13px]" aria-label="Các bước đặt hàng">
+          <li className="flex items-center gap-2 text-[#53633c]">
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#344723] text-white">
+              <CheckIcon />
+            </span>
+            <span className="hidden sm:inline">Giỏ hàng</span>
+          </li>
+          <li className="h-px w-8 bg-[#cfc7b0] sm:w-14" aria-hidden="true" />
+          <li className="flex items-center gap-2 font-semibold text-[#344723]" aria-current="step">
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#dfb65c] text-xs font-bold text-[#1d2c13]">
+              2
+            </span>
+            Thông tin &amp; thanh toán
+          </li>
+          <li className="h-px w-8 bg-[#cfc7b0] sm:w-14" aria-hidden="true" />
+          <li className="flex items-center gap-2 text-[#a3a58f]">
+            <span className="flex h-7 w-7 items-center justify-center rounded-full border border-[#d9d1bf] bg-white text-xs font-bold">
+              3
+            </span>
+            <span className="hidden sm:inline">Hoàn tất</span>
+          </li>
+        </ol>
+
         {!ready || placed ? (
           <div className="mt-10 grid gap-10 lg:grid-cols-[1.4fr_1fr]">
             <div className="h-96 animate-pulse border border-[#e4dfd2] bg-[#efe9da]" />
@@ -280,7 +330,7 @@ function CheckoutContent() {
           <form onSubmit={handleReview} noValidate className="mt-8 grid gap-10 lg:grid-cols-[1.4fr_1fr]">
             {/* ===== CỘT TRÁI: THÔNG TIN GIAO HÀNG ===== */}
             <div className="flex flex-col gap-8">
-              <div className="border border-[#e4dfd2] bg-[#fbf8ef] p-6 lg:p-8">
+              <div className="rounded-2xl border border-[#e4dfd2] bg-[#fbf8ef] p-6 shadow-[0_14px_34px_-22px_rgba(52,71,35,0.4)] lg:p-8">
                 <h2 className="font-serif text-xl font-semibold text-[#344723]">Thông tin giao hàng</h2>
 
                 <div className="mt-6 grid gap-5 sm:grid-cols-2">
@@ -338,7 +388,7 @@ function CheckoutContent() {
                 </div>
               </div>
 
-              <div className="border border-[#e4dfd2] bg-[#fbf8ef] p-6 lg:p-8">
+              <div className="rounded-2xl border border-[#e4dfd2] bg-[#fbf8ef] p-6 shadow-[0_14px_34px_-22px_rgba(52,71,35,0.4)] lg:p-8">
                 <h2 className="font-serif text-xl font-semibold text-[#344723]">Phương thức thanh toán</h2>
 
                 <div className="mt-5 space-y-3">
@@ -358,7 +408,7 @@ function CheckoutContent() {
                     return (
                       <label
                         key={option.value}
-                        className={`flex cursor-pointer items-start gap-4 border p-4 transition ${
+                        className={`flex cursor-pointer items-start gap-4 rounded-xl border p-4 transition ${
                           selected ? "border-[#344723] bg-[#f3f6ee]" : "border-[#d9d1bf] bg-white hover:border-[#53633c]"
                         }`}
                       >
@@ -372,7 +422,7 @@ function CheckoutContent() {
                         />
                         <div className="flex-1">
                           <div className="flex items-center gap-2 text-sm font-semibold text-[#344723]">
-                            <CashIcon className="h-5 w-5" />
+                            {option.value === "bank" ? <BankIcon className="h-5 w-5" /> : <CashIcon className="h-5 w-5" />}
                             {option.title}
                           </div>
                           <p className="mt-1 text-[13px] leading-5 text-[#6f715f]">{option.desc}</p>
@@ -385,7 +435,7 @@ function CheckoutContent() {
             </div>
 
             {/* ===== CỘT PHẢI: TÓM TẮT ĐƠN ===== */}
-            <div className="h-fit border border-[#e1daca] bg-[#fbf8ef] p-6">
+            <div className="h-fit rounded-2xl border border-[#e1daca] bg-[#fbf8ef] p-6 shadow-[0_14px_34px_-22px_rgba(52,71,35,0.4)] lg:sticky lg:top-24">
               <h2 className="font-serif text-lg font-semibold text-[#344723]">
                 Đơn hàng của bạn ({totalCount} sản phẩm)
               </h2>
@@ -393,7 +443,7 @@ function CheckoutContent() {
               <ul className="mt-4 divide-y divide-[#e9e3d4] border-y border-[#e9e3d4]">
                 {items.map((item) => (
                   <li key={item.itemId ?? item.variantId} className="flex gap-3 py-4">
-                    <div className="h-16 w-16 flex-shrink-0 overflow-hidden bg-[#eee8da]">
+                    <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-[#eee8da]">
                       {item.image_url ? (
                         <img src={item.image_url} alt={item.name} className="h-full w-full object-cover" />
                       ) : (
@@ -406,8 +456,11 @@ function CheckoutContent() {
                       <div className="truncate font-serif text-[15px] font-semibold text-[#344723]">
                         {item.name}
                       </div>
-                      <div className="mt-0.5 text-xs text-[#7a7c6c]">
-                        {item.variantName} × {item.quantity}
+                      <div className="mt-1.5 flex items-center gap-2 text-xs text-[#7a7c6c]">
+                        <span className="rounded-full bg-[#f3efe0] px-2 py-0.5 text-[11px] font-medium text-[#6b6850]">
+                          {item.variantName}
+                        </span>
+                        <span>× {item.quantity}</span>
                       </div>
                     </div>
                     <div className="text-sm font-medium text-[#9b7130]">
@@ -438,7 +491,7 @@ function CheckoutContent() {
               </div>
 
               {overStock.length > 0 && (
-                <div className="mt-5 flex items-start gap-3 border border-[#e6cfc4] bg-[#faf0ea] px-4 py-3 text-[13px] leading-5 text-[#a04a2e]">
+                <div className="mt-5 flex items-start gap-3 rounded-lg border border-[#e6cfc4] bg-[#faf0ea] px-4 py-3 text-[13px] leading-5 text-[#a04a2e]">
                   <AlertIcon className="mt-0.5 h-4 w-4 flex-shrink-0" />
                   <p>
                     {overStock.map((i) => `${i.name} (${i.variantName}) chỉ còn ${i.stock}`).join("; ")}.{" "}
@@ -452,10 +505,15 @@ function CheckoutContent() {
               <button
                 type="submit"
                 disabled={overStock.length > 0}
-                className="mt-6 flex h-14 w-full items-center justify-center bg-[#344723] text-sm font-semibold text-white transition hover:bg-[#263719] disabled:cursor-not-allowed disabled:opacity-50"
+                className="mt-6 flex h-14 w-full items-center justify-center gap-2.5 rounded-full bg-[#344723] text-sm font-semibold text-white shadow-[0_10px_24px_-10px_rgba(52,71,35,0.7)] transition hover:bg-[#263719] disabled:cursor-not-allowed disabled:opacity-50"
               >
+                <LockIcon className="h-4 w-4" />
                 Đặt hàng
               </button>
+
+              <p className="mt-3 text-center text-[12px] text-[#8c8d7d]">
+                Thông tin giao hàng chỉ dùng để xử lý đơn của bạn.
+              </p>
 
               <Link
                 href="/cart"
@@ -477,7 +535,7 @@ function CheckoutContent() {
           aria-modal="true"
           aria-labelledby="confirm-title"
         >
-          <div className="w-full max-w-[480px] border border-[#e4dfd2] bg-[#fbf8ef] p-7 shadow-[0_24px_60px_rgba(28,36,18,0.3)]">
+          <div className="w-full max-w-[480px] rounded-2xl border border-[#e4dfd2] bg-[#fbf8ef] p-7 shadow-[0_24px_60px_rgba(28,36,18,0.3)]">
             <h2 id="confirm-title" className="font-serif text-2xl font-semibold text-[#344723]">
               Xác nhận đặt hàng
             </h2>
@@ -520,7 +578,7 @@ function CheckoutContent() {
             </div>
 
             {serverError && (
-              <div className="mt-5 flex items-start gap-3 border border-[#e6cfc4] bg-[#faf0ea] px-4 py-3 text-[13px] leading-5 text-[#a04a2e]" role="alert">
+              <div className="mt-5 flex items-start gap-3 rounded-lg border border-[#e6cfc4] bg-[#faf0ea] px-4 py-3 text-[13px] leading-5 text-[#a04a2e]" role="alert">
                 <AlertIcon className="mt-0.5 h-4 w-4 flex-shrink-0" />
                 <p>{serverError}</p>
               </div>
@@ -531,7 +589,7 @@ function CheckoutContent() {
                 type="button"
                 onClick={() => setConfirmOpen(false)}
                 disabled={submitting}
-                className="h-12 flex-1 border border-[#d9d1bf] bg-white text-sm font-semibold text-[#4d513e] transition hover:border-[#344723] disabled:opacity-50"
+                className="h-12 flex-1 rounded-full border border-[#d9d1bf] bg-white text-sm font-semibold text-[#4d513e] transition hover:border-[#344723] disabled:opacity-50"
               >
                 Quay lại chỉnh sửa
               </button>
@@ -539,7 +597,7 @@ function CheckoutContent() {
                 type="button"
                 onClick={handleConfirm}
                 disabled={submitting}
-                className="h-12 flex-1 bg-[#344723] text-sm font-semibold text-white transition hover:bg-[#263719] disabled:opacity-60"
+                className="h-12 flex-1 rounded-full bg-[#344723] text-sm font-semibold text-white transition hover:bg-[#263719] disabled:opacity-60"
               >
                 {submitting ? "Đang đặt hàng…" : "Xác nhận đặt hàng"}
               </button>

@@ -1,5 +1,6 @@
 import { Lora, Be_Vietnam_Pro } from "next/font/google";
 import "./globals.css";
+import ChatWidget from "@/components/ChatWidget";
 
 // Font tiêu đề (có chân, sang trọng)
 const lora = Lora({
@@ -24,7 +25,10 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="vi" className={`${lora.variable} ${beVietnam.variable}`}>
-      <body>{children}</body>
+      <body>
+        {children}
+        <ChatWidget />
+      </body>
     </html>
   );
 }

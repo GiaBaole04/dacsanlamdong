@@ -182,7 +182,7 @@ export default function CartPage() {
                           {item.name}
                         </Link>
                         {item.variantName && (
-                          <p className="mt-1 text-xs text-[#7a7c6c]">Quy cách: {item.variantName}</p>
+                          <span className="mt-1.5 inline-block rounded-full bg-[#f3efe0] px-2.5 py-0.5 text-[11px] font-medium text-[#6b6850]">{item.variantName}</span>
                         )}
                       </div>
 
