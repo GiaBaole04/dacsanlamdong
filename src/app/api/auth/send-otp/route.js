@@ -2,12 +2,13 @@ import { pool } from '@/lib/db';
 import { sendOtpEmail } from '@/lib/mailer';
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
+import { randomInt } from 'crypto';
 
 const OTP_TTL_MS = 3 * 60 * 1000; // Mã OTP sống 3 phút
 const RESEND_COOLDOWN_MS = 60 * 1000; // Phải đợi 60 giây mới được gửi lại
 
 function generateOtp() {
-  return String(Math.floor(100000 + Math.random() * 900000));
+  return String(randomInt(100000, 1000000));
 }
 
 // API này dùng chung cho cả "gửi OTP lần đầu khi đăng ký" và "bấm gửi lại OTP"

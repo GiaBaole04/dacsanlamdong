@@ -1,7 +1,23 @@
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 
-const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+let warnedShortSecret = false;
+
+// Đọc khóa ký token từ .env. Thiếu khóa thì báo lỗi rõ ràng; khóa ngắn thì nhắc đổi sang chuỗi dài hơn.
+function getSecret() {
+  const value = process.env.JWT_SECRET;
+
+  if (!value) {
+    throw new Error('Thiếu JWT_SECRET trong file .env (cần một chuỗi ngẫu nhiên dài ít nhất 32 ký tự).');
+  }
+
+  if (value.length < 32 && !warnedShortSecret) {
+    warnedShortSecret = true;
+    console.warn('JWT_SECRET đang ngắn hơn 32 ký tự, nên dùng chuỗi ngẫu nhiên dài hơn để an toàn.');
+  }
+
+  return new TextEncoder().encode(value);
+}
 
 export const SESSION_COOKIE_NAME = 'session_token';
 
@@ -11,13 +27,13 @@ export async function signToken(payload, expiresIn = '1d') {
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime(expiresIn)
-    .sign(secret);
+    .sign(getSecret());
 }
 
 // Kiểm tra token có hợp lệ không (dùng ở middleware/proxy và các API cần biết ai đang đăng nhập)
 export async function verifyToken(token) {
   try {
-    const { payload } = await jwtVerify(token, secret);
+    const { payload } = await jwtVerify(token, getSecret());
     return payload;
   } catch {
     return null;

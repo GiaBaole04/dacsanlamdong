@@ -22,10 +22,12 @@ Bối cảnh: từ 01/07/2025 ba tỉnh Lâm Đồng, Đắk Nông, Bình Thuậ
 - Gợi ý sản phẩm tương tự (TF-IDF + cosine, kết hợp danh mục, vùng, giá): `lib/similarity.js`, hiển thị ở chi tiết sản phẩm.
 - Gợi ý "khách mua sản phẩm này cũng mua" (luật kết hợp từ lịch sử đơn): `api/products/[id]/also-bought/route.js`, hiển thị ở chi tiết sản phẩm. Tự ẩn khi chưa có đơn.
 
+- Hoàn thiện: README dự án, `.env.example` (chỉ có tên biến, không có giá trị thật), trang 404 (`app/not-found.js`) và trang lỗi (`app/error.js`), `app/robots.js`, tiêu đề tab riêng cho từng nhóm trang (layout con chỉ có metadata, tiêu đề sản phẩm/câu chuyện lấy từ database), email xác nhận đơn hàng (`lib/mailer.js`, gửi sau khi đặt; chưa cấu hình Gmail thì bỏ qua, không làm hỏng đơn), OTP đăng ký dùng `crypto.randomInt`, `lib/auth.js` báo lỗi rõ khi thiếu `JWT_SECRET`.
+
 ## Việc tiếp theo (dự kiến)
 - Hoàn thiện báo cáo: giải thích thuật toán gợi ý, ghi rõ dữ liệu đơn hàng mẫu (nếu dùng để demo) là dữ liệu tự tạo.
 
-- Chatbot tư vấn đặc sản dùng Gemini (`api/chat/route.js`, `lib/chatbot.js`, `components/ChatWidget.js`, nút chat nổi gắn trong `app/layout.js`). Mô hình chỉ trả MÃ sản phẩm; tên, ảnh, giá luôn lấy lại từ database. Có lọc ngân sách ("dưới 300 nghìn"), giới hạn số lần hỏi theo IP và theo ngày. Biến môi trường trong `.env` (không có trên GitHub): `GEMINI_API_KEY` (bắt buộc), `GEMINI_MODEL` (tùy chọn, mặc định `gemini-3.5-flash-lite`), `CHAT_IP_LIMIT` và `CHAT_DAILY_LIMIT` (tùy chọn). Khóa API chỉ dùng ở server, không để trong biến `NEXT_PUBLIC_`.
+- Chatbot tư vấn đặc sản dùng Gemini (`api/chat/route.js`, `lib/chatbot.js`, `components/ChatWidget.js`, nút chat nổi gắn trong `app/layout.js`). Mô hình chỉ trả MÃ sản phẩm; tên, ảnh, giá luôn lấy lại từ database. Có lọc ngân sách ("dưới 300 nghìn"), giới hạn số lần hỏi theo IP và theo ngày. Biến môi trường trong `.env` (không có trên GitHub, xem `.env.example`): `GEMINI_API_KEY` (bắt buộc), `GEMINI_MODEL` (tùy chọn, mặc định `gemini-3.5-flash-lite`), `CHAT_IP_LIMIT` và `CHAT_DAILY_LIMIT` (tùy chọn). Khóa API chỉ dùng ở server, không để trong biến `NEXT_PUBLIC_`.
 
 ## Cấu trúc `src/` (không gồm admin)
 - `app/page.js` trang chủ · `app/about` giới thiệu · `app/products` danh sách + `[id]` chi tiết · `app/stories` câu chuyện + `[slug]`

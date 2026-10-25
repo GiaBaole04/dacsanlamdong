@@ -1,6 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
 import { calcShippingFee, validateShipping } from '@/lib/orderUtils';
+import { sendOrderConfirmationEmail } from '@/lib/mailer';
 import { NextResponse } from 'next/server';
 
 // Lỗi "có chủ đích" (giỏ trống, hết hàng...) để trả về cho người dùng đọc được
@@ -262,6 +263,30 @@ export async function POST(request) {
     }
 
     await conn.commit();
+
+    // Gửi email xác nhận đơn hàng. Không chờ kết quả: gửi mail lỗi cũng không làm hỏng đơn đã đặt.
+    pool
+      .query('SELECT email FROM users WHERE id = ?', [userId])
+      .then(([rows]) => {
+        if (!rows[0]?.email) return;
+        return sendOrderConfirmationEmail(rows[0].email, {
+          id: orderId,
+          receiverName: values.receiverName,
+          phone: values.phone,
+          address: values.shippingAddress,
+          note: values.note,
+          paymentMethod,
+          shippingFee,
+          total: grandTotal,
+          items: lines.map((l) => ({
+            name: l.productName,
+            variant: l.variantName,
+            quantity: l.quantity,
+            price: l.price,
+          })),
+        });
+      })
+      .catch((err) => console.error('send order email error:', err));
 
     return NextResponse.json({ ok: true, orderId, totalAmount: grandTotal, shippingFee }, { status: 201 });
   } catch (error) {

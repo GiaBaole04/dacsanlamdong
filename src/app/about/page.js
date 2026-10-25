@@ -4,7 +4,7 @@ import Footer from "@/components/Footer";
 import { ContourPattern, LandscapeScene, RidgeDivider, ThemeIcon } from "@/components/Landscape";
 
 export const metadata = {
-  title: "Giới thiệu | Đặc Sản Lâm Đồng",
+  title: "Giới thiệu",
   description: "Đặc Sản Lâm Đồng mang sản vật của cao nguyên, rừng đất đỏ và biển đến gần hơn với mỗi gia đình Việt.",
 };
 
