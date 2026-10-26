@@ -3,6 +3,7 @@ import { requireStaff } from '@/lib/adminAuth';
 import { checkTransition, NEXT_STATUS } from '@/lib/orderRules';
 import { NextResponse } from 'next/server';
 
+import { withApi } from '@/lib/apiHandler';
 class AdminError extends Error {
   constructor(message, status = 400) {
     super(message);
@@ -16,7 +17,7 @@ function parseId(value) {
 }
 
 // Chi tiết 1 đơn cho quản trị: thông tin khách, hàng, nhật ký xử lý
-export async function GET(request, { params }) {
+async function handleGET(request, { params }) {
   const guard = await requireStaff();
   if (guard.response) return guard.response;
 
@@ -87,7 +88,7 @@ export async function GET(request, { params }) {
 }
 
 // Xử lý đơn: đổi trạng thái  { status: "processing" }  hoặc  xác nhận đã nhận tiền  { markPaid: true }
-export async function PATCH(request, { params }) {
+async function handlePATCH(request, { params }) {
   const guard = await requireStaff();
   if (guard.response) return guard.response;
 
@@ -203,3 +204,7 @@ export async function PATCH(request, { params }) {
     conn.release();
   }
 }
+
+// Bọc từng handler để lỗi bất ngờ (mất kết nối database...) luôn trả về JSON thân thiện, không làm sập API
+export const GET = withApi(handleGET);
+export const PATCH = withApi(handlePATCH);

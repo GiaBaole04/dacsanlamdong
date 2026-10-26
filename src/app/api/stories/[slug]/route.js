@@ -3,10 +3,11 @@ import { deriveExcerpt } from '@/lib/storyRules';
 import { readingMinutes } from '@/lib/storyFormat';
 import { NextResponse } from 'next/server';
 
+import { withApi } from '@/lib/apiHandler';
 const notFound = () => NextResponse.json({ error: 'Không tìm thấy bài viết.' }, { status: 404 });
 
 // Chi tiết 1 câu chuyện đã đăng, kèm bài liên quan và sản phẩm cùng vùng
-export async function GET(request, { params }) {
+async function handleGET(request, { params }) {
   const { slug } = await params;
 
   if (!/^[a-z0-9-]{1,160}$/.test(String(slug))) return notFound();
@@ -75,3 +76,6 @@ export async function GET(request, { params }) {
     })),
   });
 }
+
+// Bọc từng handler để lỗi bất ngờ (mất kết nối database...) luôn trả về JSON thân thiện, không làm sập API
+export const GET = withApi(handleGET);

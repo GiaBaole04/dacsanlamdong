@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AuthShell from "@/components/AuthShell";
 
+import { friendlyError } from "@/lib/friendlyError";
 /* =========================
    ICONS
 ========================= */
@@ -152,7 +153,7 @@ export default function ForgotPasswordPage() {
       await requestOtp();
       setStep("reset");
     } catch (err) {
-      setError(err.message);
+      setError(friendlyError(err));
     } finally {
       setSubmitting(false);
     }
@@ -166,7 +167,7 @@ export default function ForgotPasswordPage() {
     try {
       await requestOtp();
     } catch (err) {
-      setError(err.message);
+      setError(friendlyError(err));
     } finally {
       setSubmitting(false);
     }
@@ -207,7 +208,7 @@ export default function ForgotPasswordPage() {
         router.push("/login");
       }, 2000);
     } catch (err) {
-      setError(err.message);
+      setError(friendlyError(err));
     } finally {
       setSubmitting(false);
     }

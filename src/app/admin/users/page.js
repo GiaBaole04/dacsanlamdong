@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import { formatDateTime } from "@/lib/orderUtils";
 
+import { friendlyError } from "@/lib/friendlyError";
 const ROLE_LABEL = { admin: "Quản trị viên", staff: "Nhân viên", customer: "Khách hàng" };
 const ROLE_BADGE = {
   admin: "bg-[#e8e4f6] text-[#52458f]",
@@ -59,7 +60,7 @@ export default function AdminUsersPage() {
       if (!res.ok) throw new Error(json.error || "Không tải được danh sách tài khoản.");
       if (current === requestId.current) setData(json);
     } catch (err) {
-      if (current === requestId.current) setError(err.message);
+      if (current === requestId.current) setError(friendlyError(err));
     }
   }, [tab, query]);
 
@@ -88,7 +89,7 @@ export default function AdminUsersPage() {
       setChange(null);
       await load();
     } catch (err) {
-      setChangeError(err.message);
+      setChangeError(friendlyError(err));
     } finally {
       setBusy(false);
     }
@@ -101,7 +102,7 @@ export default function AdminUsersPage() {
       await patchUser(user.id, { unlock: true });
       await load();
     } catch (err) {
-      setNotice(err.message);
+      setNotice(friendlyError(err));
     }
   }
 
@@ -115,7 +116,7 @@ export default function AdminUsersPage() {
 
       <div className="mt-6 border border-[#e8d9ae] bg-[#fbf4dd] px-5 py-4 text-sm leading-6 text-[#7d6a35]">
         <strong>Thêm nhân viên mới:</strong> nhờ người đó đăng ký tài khoản trên website (xác thực email bằng mã OTP), sau đó đổi vai
-        trò của họ sang "Nhân viên" tại đây.
+        trò của họ sang &ldquo;Nhân viên&rdquo; tại đây.
       </div>
 
       <div className="mt-6">

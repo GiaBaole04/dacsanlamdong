@@ -3,8 +3,9 @@ import { requireStaff } from '@/lib/adminAuth';
 import { deriveExcerpt, slugify, validateStoryInput } from '@/lib/storyRules';
 import { NextResponse } from 'next/server';
 
+import { withApi } from '@/lib/apiHandler';
 // Danh sách TẤT CẢ bài viết (kể cả bản nháp) cho quản trị
-export async function GET() {
+async function handleGET() {
   const guard = await requireStaff();
   if (guard.response) return guard.response;
 
@@ -38,7 +39,7 @@ async function uniqueSlug(base) {
 }
 
 // Viết bài mới (nhân viên và admin đều được)
-export async function POST(request) {
+async function handlePOST(request) {
   const guard = await requireStaff();
   if (guard.response) return guard.response;
 
@@ -87,3 +88,7 @@ export async function POST(request) {
 
   return NextResponse.json({ error: 'Không tạo được đường dẫn cho bài viết, vui lòng thử lại.' }, { status: 409 });
 }
+
+// Bọc từng handler để lỗi bất ngờ (mất kết nối database...) luôn trả về JSON thân thiện, không làm sập API
+export const GET = withApi(handleGET);
+export const POST = withApi(handlePOST);

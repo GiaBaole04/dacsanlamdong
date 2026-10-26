@@ -10,6 +10,7 @@ import StoryContent from "@/components/StoryContent";
 import { LandscapeScene, RidgeDivider, ThemeIcon } from "@/components/Landscape";
 import { THEME_LABEL, formatStoryDate, regionTheme } from "@/lib/storyFormat";
 
+import { friendlyError } from "@/lib/friendlyError";
 function formatPrice(price) {
   const number = Number(price);
   return Number.isFinite(number) ? `${number.toLocaleString("vi-VN")}đ` : "Liên hệ";
@@ -42,7 +43,7 @@ export default function StoryDetailPage() {
         if (!res.ok) throw new Error(json.error || "Không tải được bài viết.");
         if (!cancelled) setData(json);
       } catch (err) {
-        if (!cancelled) setError(err.message);
+        if (!cancelled) setError(friendlyError(err));
       }
     }
 

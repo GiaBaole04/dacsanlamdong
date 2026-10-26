@@ -5,6 +5,7 @@ import { buildVietQR, orderTransferContent } from '@/lib/vietqr';
 import { NextResponse } from 'next/server';
 import QRCode from 'qrcode';
 
+import { withApi } from '@/lib/apiHandler';
 // Chỉ đơn chuyển khoản, chưa thanh toán và chưa hủy mới cần mã QR.
 // Mã QR được tạo ở máy chủ từ số tiền THẬT của đơn, khách không sửa được.
 async function buildTransfer(order) {
@@ -53,7 +54,7 @@ async function buildTransfer(order) {
 }
 
 // Chi tiết 1 đơn hàng. Chỉ chủ đơn (hoặc admin/nhân viên) mới xem được.
-export async function GET(request, { params }) {
+async function handleGET(request, { params }) {
   const user = await getCurrentUser();
 
   if (!user) {
@@ -114,3 +115,6 @@ export async function GET(request, { params }) {
     },
   });
 }
+
+// Bọc từng handler để lỗi bất ngờ (mất kết nối database...) luôn trả về JSON thân thiện, không làm sập API
+export const GET = withApi(handleGET);

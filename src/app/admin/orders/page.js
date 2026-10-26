@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ORDER_STATUS, PAYMENT_STATUS_LABEL, formatDateTime, formatOrderCode, formatPrice } from "@/lib/orderUtils";
 
+import { friendlyError } from "@/lib/friendlyError";
 const TABS = [
   { key: "all", label: "Tất cả" },
   { key: "pending", label: "Chờ xác nhận" },
@@ -56,7 +57,7 @@ function AdminOrdersContent() {
         // Bỏ qua kết quả của lần gọi cũ nếu người dùng đã đổi bộ lọc
         if (current === requestId.current) setData(json);
       } catch (err) {
-        if (current === requestId.current) setError(err.message);
+        if (current === requestId.current) setError(friendlyError(err));
       } finally {
         if (current === requestId.current) setLoading(false);
       }

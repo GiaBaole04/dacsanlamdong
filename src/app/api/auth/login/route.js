@@ -3,15 +3,21 @@ import { signToken, SESSION_COOKIE_NAME } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 
+import { HttpError, readJson, withApi } from '@/lib/apiHandler';
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCK_DURATION_MS = 15 * 60 * 1000; // Khóa 15 phút sau khi sai đủ 5 lần
 
-export async function POST(request) {
+async function handlePOST(request) {
   try {
-    const { email, password, remember } = await request.json();
+    const { email, password, remember } = await readJson(request);
 
-    if (!email || !password) {
+    // Phải là chuỗi (chặn trường hợp gửi số/object làm hỏng truy vấn), có độ dài hợp lý
+    if (typeof email !== 'string' || typeof password !== 'string' || !email.trim() || !password) {
       return NextResponse.json({ error: 'Nhập đầy đủ email và mật khẩu.' }, { status: 400 });
+    }
+
+    if (email.length > 254 || password.length > 200) {
+      return NextResponse.json({ error: 'Email hoặc mật khẩu không đúng.' }, { status: 401 });
     }
 
     const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
@@ -94,7 +100,11 @@ export async function POST(request) {
 
     return response;
   } catch (error) {
+    if (error instanceof HttpError) throw error; // lỗi có chủ đích: để withApi trả đúng thông báo
     console.error('login error:', error);
     return NextResponse.json({ error: 'Có lỗi xảy ra, thử lại sau.' }, { status: 500 });
   }
 }
+
+// Bọc từng handler để lỗi bất ngờ (mất kết nối database...) luôn trả về JSON thân thiện, không làm sập API
+export const POST = withApi(handlePOST);

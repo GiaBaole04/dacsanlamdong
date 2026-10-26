@@ -7,6 +7,7 @@ import { StoryCover } from "@/components/Landscape";
 import { useAuth } from "@/hooks/useAuth";
 import { formatStoryDate } from "@/lib/storyFormat";
 
+import { friendlyError } from "@/lib/friendlyError";
 export default function AdminStoriesPage() {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
@@ -29,7 +30,7 @@ export default function AdminStoriesPage() {
       if (!res.ok) throw new Error(json.error || "Không tải được danh sách bài viết.");
       setStories(json.stories);
     } catch (err) {
-      setError(err.message);
+      setError(friendlyError(err));
     }
   }, []);
 
@@ -59,7 +60,7 @@ export default function AdminStoriesPage() {
       if (!res.ok) throw new Error(json.error || "Không cập nhật được bài viết.");
       await load();
     } catch (err) {
-      setNotice(err.message);
+      setNotice(friendlyError(err));
     } finally {
       setToggling(null);
     }
@@ -78,7 +79,7 @@ export default function AdminStoriesPage() {
       setDeleteTarget(null);
       await load();
     } catch (err) {
-      setDeleteError(err.message);
+      setDeleteError(friendlyError(err));
     } finally {
       setDeleting(false);
     }

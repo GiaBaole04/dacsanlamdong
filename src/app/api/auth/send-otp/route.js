@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { randomInt } from 'crypto';
 
+import { HttpError, readJson, withApi } from '@/lib/apiHandler';
 const OTP_TTL_MS = 3 * 60 * 1000; // Mã OTP sống 3 phút
 const RESEND_COOLDOWN_MS = 60 * 1000; // Phải đợi 60 giây mới được gửi lại
 
@@ -12,11 +13,11 @@ function generateOtp() {
 }
 
 // API này dùng chung cho cả "gửi OTP lần đầu khi đăng ký" và "bấm gửi lại OTP"
-export async function POST(request) {
+async function handlePOST(request) {
   try {
-    const { email, full_name, password } = await request.json();
+    const { email, full_name, password } = await readJson(request);
 
-    if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
+    if (typeof email !== 'string' || email.length > 254 || !/^\S+@\S+\.\S+$/.test(email)) {
       return NextResponse.json({ error: 'Email không hợp lệ.' }, { status: 400 });
     }
 
@@ -48,7 +49,7 @@ export async function POST(request) {
       const otp = generateOtp();
       const expiresAt = new Date(now.getTime() + OTP_TTL_MS);
 
-      await pool.query('UPDATE users SET otp_code = ?, otp_expires_at = ? WHERE id = ?', [
+      await pool.query('UPDATE users SET otp_code = ?, otp_expires_at = ?, otp_attempts = 0 WHERE id = ?', [
         otp,
         expiresAt,
         existing.id,
@@ -60,11 +61,22 @@ export async function POST(request) {
     }
 
     // Trường hợp đăng ký mới hoàn toàn
-    if (!full_name || !password || password.length < 6) {
+    const fullName = typeof full_name === 'string' ? full_name.trim().replace(/\s+/g, ' ') : '';
+
+    if (fullName.length < 2 || fullName.length > 100) {
+      return NextResponse.json({ error: 'Họ tên cần từ 2 đến 100 ký tự.' }, { status: 400 });
+    }
+
+    if (typeof password !== 'string' || password.length < 6) {
       return NextResponse.json(
         { error: 'Nhập đầy đủ họ tên và mật khẩu (tối thiểu 6 ký tự).' },
         { status: 400 }
       );
+    }
+
+    // bcrypt chỉ dùng 72 ký tự đầu, nên giới hạn để tránh hiểu nhầm và tránh gửi chuỗi quá dài
+    if (password.length > 72) {
+      return NextResponse.json({ error: 'Mật khẩu tối đa 72 ký tự.' }, { status: 400 });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -74,14 +86,18 @@ export async function POST(request) {
     await pool.query(
       `INSERT INTO users (full_name, email, password, role, email_verified, otp_code, otp_expires_at)
        VALUES (?, ?, ?, 'customer', FALSE, ?, ?)`,
-      [full_name, email, hashedPassword, otp, expiresAt]
+      [fullName, email, hashedPassword, otp, expiresAt]
     );
 
     await sendOtpEmail(email, otp);
 
     return NextResponse.json({ ok: true, expiresInSeconds: OTP_TTL_MS / 1000 });
   } catch (error) {
+    if (error instanceof HttpError) throw error; // lỗi có chủ đích: để withApi trả đúng thông báo
     console.error('send-otp error:', error);
     return NextResponse.json({ error: 'Có lỗi xảy ra, thử lại sau.' }, { status: 500 });
   }
 }
+
+// Bọc từng handler để lỗi bất ngờ (mất kết nối database...) luôn trả về JSON thân thiện, không làm sập API
+export const POST = withApi(handlePOST);

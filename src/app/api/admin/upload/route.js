@@ -4,6 +4,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { randomBytes } from 'node:crypto';
 
+import { withApi } from '@/lib/apiHandler';
 export const runtime = 'nodejs';
 
 const MAX_SIZE = 3 * 1024 * 1024; // 3MB
@@ -36,7 +37,7 @@ function slugify(name) {
 }
 
 // Tải ảnh lên thư mục public/images/products hoặc public/images/stories (dùng khi chạy local / demo)
-export async function POST(request) {
+async function handlePOST(request) {
   const guard = await requireStaff();
   if (guard.response) return guard.response;
 
@@ -76,3 +77,6 @@ export async function POST(request) {
 
   return NextResponse.json({ ok: true, url: `/images/${folder}/${filename}` }, { status: 201 });
 }
+
+// Bọc từng handler để lỗi bất ngờ (mất kết nối database...) luôn trả về JSON thân thiện, không làm sập API
+export const POST = withApi(handlePOST);

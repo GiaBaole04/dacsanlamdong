@@ -2,9 +2,10 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 
+import { withApi } from '@/lib/apiHandler';
 // Khách tự hủy đơn của mình — chỉ khi đơn còn "Chờ xác nhận" (pending).
 // Hủy xong thì cộng trả số lượng về kho.
-export async function POST(request, { params }) {
+async function handlePOST(request, { params }) {
   const user = await getCurrentUser();
 
   if (!user) {
@@ -77,3 +78,6 @@ export async function POST(request, { params }) {
     conn.release();
   }
 }
+
+// Bọc từng handler để lỗi bất ngờ (mất kết nối database...) luôn trả về JSON thân thiện, không làm sập API
+export const POST = withApi(handlePOST);

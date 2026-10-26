@@ -3,6 +3,7 @@ import { requireStaff } from '@/lib/adminAuth';
 import { deriveExcerpt, validateStoryInput } from '@/lib/storyRules';
 import { NextResponse } from 'next/server';
 
+import { withApi } from '@/lib/apiHandler';
 function parseId(value) {
   const id = Number(value);
   return Number.isInteger(id) && id > 0 ? id : null;
@@ -11,7 +12,7 @@ function parseId(value) {
 const notFound = () => NextResponse.json({ error: 'Không tìm thấy bài viết.' }, { status: 404 });
 
 // Lấy 1 bài (kể cả bản nháp) để sửa
-export async function GET(request, { params }) {
+async function handleGET(request, { params }) {
   const guard = await requireStaff();
   if (guard.response) return guard.response;
 
@@ -37,7 +38,7 @@ export async function GET(request, { params }) {
 }
 
 // Sửa bài. Đường dẫn (slug) giữ nguyên để các liên kết đã chia sẻ không bị hỏng.
-export async function PUT(request, { params }) {
+async function handlePUT(request, { params }) {
   const guard = await requireStaff();
   if (guard.response) return guard.response;
 
@@ -79,7 +80,7 @@ export async function PUT(request, { params }) {
 }
 
 // Đăng / chuyển về bản nháp nhanh: { isPublished: true }
-export async function PATCH(request, { params }) {
+async function handlePATCH(request, { params }) {
   const guard = await requireStaff();
   if (guard.response) return guard.response;
 
@@ -113,7 +114,7 @@ export async function PATCH(request, { params }) {
 }
 
 // Xóa bài: CHỈ ADMIN
-export async function DELETE(request, { params }) {
+async function handleDELETE(request, { params }) {
   const guard = await requireStaff({ adminOnly: true });
   if (guard.response) return guard.response;
 
@@ -126,3 +127,9 @@ export async function DELETE(request, { params }) {
 
   return NextResponse.json({ ok: true });
 }
+
+// Bọc từng handler để lỗi bất ngờ (mất kết nối database...) luôn trả về JSON thân thiện, không làm sập API
+export const GET = withApi(handleGET);
+export const PUT = withApi(handlePUT);
+export const PATCH = withApi(handlePATCH);
+export const DELETE = withApi(handleDELETE);

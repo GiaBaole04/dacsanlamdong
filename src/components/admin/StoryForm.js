@@ -8,6 +8,7 @@ import { StoryCover, ThemeIcon } from "@/components/Landscape";
 import { THEME_LABEL, readingMinutes, regionTheme } from "@/lib/storyFormat";
 import { validateStoryInput } from "@/lib/storyRules";
 
+import { friendlyError } from "@/lib/friendlyError";
 const inputClass =
   "w-full border bg-white px-3.5 text-sm outline-none transition placeholder:text-[#a3a58f] focus:border-[#344723]";
 
@@ -83,7 +84,7 @@ export default function StoryForm({ storyId }) {
           }
         }
       } catch (err) {
-        if (!cancelled) setLoadError(err.message);
+        if (!cancelled) setLoadError(friendlyError(err));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -118,7 +119,7 @@ export default function StoryForm({ storyId }) {
 
       setCoverUrl(json.url);
     } catch (err) {
-      setUploadError(err.message);
+      setUploadError(friendlyError(err));
     } finally {
       setUploading(false);
       if (fileInput.current) fileInput.current.value = "";
@@ -155,7 +156,7 @@ export default function StoryForm({ storyId }) {
 
       router.push("/admin/stories");
     } catch (err) {
-      setServerError(err.message);
+      setServerError(friendlyError(err));
       setSaving(false);
     }
   }

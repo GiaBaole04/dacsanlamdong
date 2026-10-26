@@ -1,0 +1,3421 @@
+{
+  "info": {
+    "name": "Đặc Sản Lâm Đồng - API",
+    "_postman_id": "dacsanlamdong-api-1-0-0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Bộ test API tự động cho website Đặc Sản Lâm Đồng.\n\n**Cách chạy nhanh:** import file này + file Environment, chọn environment \"Local\", bấm **Run collection** (nút ▶) → mọi request chạy theo thứ tự và phải **PASS hết**.\n\nPostman tự lưu cookie đăng nhập, nên thứ tự các thư mục chính là thứ tự đăng nhập: khách → nhân viên → admin → kiểm thử phân quyền.\n\nCác request có đuôi **[thủ công]** (gửi OTP qua email, tải ảnh) cần cấu hình Gmail / chọn file nên không chạy tự động."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Công khai (không cần đăng nhập)",
+      "item": [
+        {
+          "name": "Danh sách sản phẩm",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ],
+              "query": []
+            },
+            "description": "Trả về mọi sản phẩm đang bán kèm các quy cách (giá, tồn kho). Lưu ý `price` là chuỗi số thập phân."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "const list = pm.response.json();",
+                  "pm.test('Có ít nhất 1 sản phẩm', () => pm.expect(list).to.be.an('array').that.is.not.empty);",
+                  "// Lưu 1 quy cách còn nhiều hàng để các request sau dùng",
+                  "for (const p of list) { const v = p.variants.find(x => x.stock >= 20); if (v) { pm.collectionVariables.set('productId', p.id); pm.collectionVariables.set('variantId', v.id); break; } }",
+                  "pm.test('Đã chọn được quy cách còn hàng', () => pm.expect(pm.collectionVariables.get('variantId')).to.exist);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sản phẩm thường mua cùng",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/{{productId}}/also-bought",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "{{productId}}",
+                "also-bought"
+              ],
+              "query": []
+            },
+            "description": "Gợi ý \"khách mua sản phẩm này cũng mua\" dựa trên luật kết hợp từ lịch sử đơn hàng."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Có mảng items', () => pm.expect(pm.response.json().items).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Gợi ý cùng mua: mã sai",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/abc/also-bought",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "abc",
+                "also-bought"
+              ],
+              "query": []
+            },
+            "description": "Kiểm thử: mã sản phẩm không phải số."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 400', () => pm.expect(pm.response.code).to.be.oneOf([400]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Lỗi có thông báo tiếng Việt, không lộ lỗi kỹ thuật', () => { const j = pm.response.json(); pm.expect(j.error).to.be.a('string').and.not.match(/Unexpected|SQL|ECONN|undefined|TypeError/i); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Danh sách câu chuyện",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/stories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "stories"
+              ],
+              "query": []
+            },
+            "description": "Chỉ trả các bài đã đăng. Bản nháp không bao giờ xuất hiện ở đây."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "const s = pm.response.json().stories;",
+                  "pm.test('Có mảng stories', () => pm.expect(s).to.be.an('array'));",
+                  "if (s.length) pm.collectionVariables.set('storySlug', s[0].slug);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Chi tiết câu chuyện",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/stories/{{storySlug}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "stories",
+                "{{storySlug}}"
+              ],
+              "query": []
+            },
+            "description": "Chi tiết một bài đã đăng, kèm bài liên quan và sản phẩm cùng vùng."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Có nội dung bài', () => pm.expect(pm.response.json().story.content).to.be.a('string'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Câu chuyện không tồn tại",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/stories/khong-ton-tai",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "stories",
+                "khong-ton-tai"
+              ],
+              "query": []
+            },
+            "description": "Kiểm thử 404."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 404', () => pm.expect(pm.response.code).to.be.oneOf([404]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Lỗi có thông báo tiếng Việt, không lộ lỗi kỹ thuật', () => { const j = pm.response.json(); pm.expect(j.error).to.be.a('string').and.not.match(/Unexpected|SQL|ECONN|undefined|TypeError/i); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Chatbot tư vấn sản phẩm",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chat"
+              ],
+              "query": []
+            },
+            "description": "Chatbot (Google Gemini) gợi ý sản phẩm. Khóa API chỉ nằm ở máy chủ. Giới hạn 12 câu hỏi / 10 phút mỗi địa chỉ IP. Trả 503 nếu chưa cấu hình `GEMINI_API_KEY`.\n\nKết quả phụ thuộc có cấu hình GEMINI_API_KEY hay không nên test chấp nhận nhiều mã.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"text\": \"Gợi ý cho mình cà phê dưới 150k\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200 hoặc 429 hoặc 502 hoặc 503 hoặc 504', () => pm.expect(pm.response.code).to.be.oneOf([200, 429, 502, 503, 504]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ai đang đăng nhập? (chưa đăng nhập)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ],
+              "query": []
+            },
+            "description": "Trả thông tin người đang đăng nhập; vai trò luôn đọc lại từ database. Chưa đăng nhập thì `user` là `null` (không phải lỗi)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('user là null khi chưa đăng nhập', () => pm.expect(pm.response.json().user).to.eql(null));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Xác thực & đăng ký",
+      "item": [
+        {
+          "name": "Đăng nhập: thiếu mật khẩu",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ],
+              "query": []
+            },
+            "description": "Kiểm thử 400.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"khacha@gmail.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 400', () => pm.expect(pm.response.code).to.be.oneOf([400]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Lỗi có thông báo tiếng Việt, không lộ lỗi kỹ thuật', () => { const j = pm.response.json(); pm.expect(j.error).to.be.a('string').and.not.match(/Unexpected|SQL|ECONN|undefined|TypeError/i); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Đăng nhập: sai mật khẩu",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ],
+              "query": []
+            },
+            "description": "Kiểm thử 401.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"khacha@gmail.com\",\n  \"password\": \"sai-mat-khau\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 401', () => pm.expect(pm.response.code).to.be.oneOf([401]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Lỗi có thông báo tiếng Việt, không lộ lỗi kỹ thuật', () => { const j = pm.response.json(); pm.expect(j.error).to.be.a('string').and.not.match(/Unexpected|SQL|ECONN|undefined|TypeError/i); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Đăng nhập: JSON hỏng",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ],
+              "query": []
+            },
+            "description": "Kiểm thử JSON hỏng trả 400 (không phải 500).",
+            "body": {
+              "mode": "raw",
+              "raw": "{day khong phai json"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 400', () => pm.expect(pm.response.code).to.be.oneOf([400]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Lỗi có thông báo tiếng Việt, không lộ lỗi kỹ thuật', () => { const j = pm.response.json(); pm.expect(j.error).to.be.a('string').and.not.match(/Unexpected|SQL|ECONN|undefined|TypeError/i); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Đăng ký bước 1: email sai",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/send-otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "send-otp"
+              ],
+              "query": []
+            },
+            "description": "Kiểm thử 400.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"khong-phai-email\",\n  \"full_name\": \"Nguyen Van A\",\n  \"password\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 400', () => pm.expect(pm.response.code).to.be.oneOf([400]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Lỗi có thông báo tiếng Việt, không lộ lỗi kỹ thuật', () => { const j = pm.response.json(); pm.expect(j.error).to.be.a('string').and.not.match(/Unexpected|SQL|ECONN|undefined|TypeError/i); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Đăng ký bước 1: mật khẩu quá ngắn",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/send-otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "send-otp"
+              ],
+              "query": []
+            },
+            "description": "Kiểm thử 400.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"khong-ton-tai-123@example.com\",\n  \"full_name\": \"Nguyen Van A\",\n  \"password\": \"123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 400', () => pm.expect(pm.response.code).to.be.oneOf([400]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Lỗi có thông báo tiếng Việt, không lộ lỗi kỹ thuật', () => { const j = pm.response.json(); pm.expect(j.error).to.be.a('string').and.not.match(/Unexpected|SQL|ECONN|undefined|TypeError/i); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Đăng ký bước 2: mã OTP sai định dạng",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/verify-otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "verify-otp"
+              ],
+              "query": []
+            },
+            "description": "Kiểm thử 400.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"khong-ton-tai-123@example.com\",\n  \"otp\": \"abc\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 400', () => pm.expect(pm.response.code).to.be.oneOf([400]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Lỗi có thông báo tiếng Việt, không lộ lỗi kỹ thuật', () => { const j = pm.response.json(); pm.expect(j.error).to.be.a('string').and.not.match(/Unexpected|SQL|ECONN|undefined|TypeError/i); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Quên mật khẩu: email sai",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/forgot-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "forgot-password"
+              ],
+              "query": []
+            },
+            "description": "Kiểm thử 400.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"khong-phai-email\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 400', () => pm.expect(pm.response.code).to.be.oneOf([400]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Lỗi có thông báo tiếng Việt, không lộ lỗi kỹ thuật', () => { const j = pm.response.json(); pm.expect(j.error).to.be.a('string').and.not.match(/Unexpected|SQL|ECONN|undefined|TypeError/i); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Quên mật khẩu bước 2: thiếu thông tin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/reset-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "reset-password"
+              ],
+              "query": []
+            },
+            "description": "Kiểm thử 400.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"khacha@gmail.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 400', () => pm.expect(pm.response.code).to.be.oneOf([400]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Lỗi có thông báo tiếng Việt, không lộ lỗi kỹ thuật', () => { const j = pm.response.json(); pm.expect(j.error).to.be.a('string').and.not.match(/Unexpected|SQL|ECONN|undefined|TypeError/i); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Khách hàng: giỏ hàng & đơn hàng",
+      "item": [
+        {
+          "name": "Đăng nhập (khách hàng)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ],
+              "query": []
+            },
+            "description": "Đăng nhập tài khoản khách. Postman tự giữ cookie nên các request sau đó đã ở trạng thái đăng nhập.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{customerEmail}}\",\n  \"password\": \"{{password}}\",\n  \"remember\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Vai trò là customer', () => pm.expect(pm.response.json().user.role).to.eql('customer'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ai đang đăng nhập? (khách)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ],
+              "query": []
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Đã nhận diện là khách', () => pm.expect(pm.response.json().user.role).to.eql('customer'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Xem giỏ hàng",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cart",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cart"
+              ],
+              "query": []
+            },
+            "description": "Giỏ hàng của người đang đăng nhập."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Có mảng items', () => pm.expect(pm.response.json().items).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Thêm vào giỏ",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cart",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cart"
+              ],
+              "query": []
+            },
+            "description": "Thêm sản phẩm vào giỏ. Đã có thì cộng dồn số lượng (tối đa 999). Số lượng phải là số nguyên 1–999; sản phẩm phải tồn tại, đang bán và còn hàng.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"variantId\": {{variantId}},\n  \"quantity\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Thêm vào giỏ: số lượng âm",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cart",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cart"
+              ],
+              "query": []
+            },
+            "description": "Kiểm thử validation: bị từ chối 400.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"variantId\": {{variantId}},\n  \"quantity\": -5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 400', () => pm.expect(pm.response.code).to.be.oneOf([400]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Lỗi có thông báo tiếng Việt, không lộ lỗi kỹ thuật', () => { const j = pm.response.json(); pm.expect(j.error).to.be.a('string').and.not.match(/Unexpected|SQL|ECONN|undefined|TypeError/i); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Thêm vào giỏ: sản phẩm không tồn tại",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cart",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cart"
+              ],
+              "query": []
+            },
+            "description": "Kiểm thử 404.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"variantId\": 999999,\n  \"quantity\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 404', () => pm.expect(pm.response.code).to.be.oneOf([404]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Lỗi có thông báo tiếng Việt, không lộ lỗi kỹ thuật', () => { const j = pm.response.json(); pm.expect(j.error).to.be.a('string').and.not.match(/Unexpected|SQL|ECONN|undefined|TypeError/i); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Đổi số lượng trong giỏ",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cart",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cart"
+              ],
+              "query": []
+            },
+            "description": "Đặt số lượng CHÍNH XÁC cho một quy cách đang có trong giỏ (nút +/- ở trang giỏ hàng).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"variantId\": {{variantId}},\n  \"quantity\": 3\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Xem giỏ hàng (kiểm tra số lượng = 3)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cart",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cart"
+              ],
+              "query": []
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "const it = pm.response.json().items.find(i => i.variantId == pm.collectionVariables.get('variantId'));",
+                  "pm.test('Số lượng trong giỏ là 3', () => pm.expect(it && it.quantity).to.eql(3));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Gộp giỏ khách vãng lai",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cart/merge",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cart",
+                "merge"
+              ],
+              "query": []
+            },
+            "description": "Gộp giỏ hàng lưu tạm ở trình duyệt (khi chưa đăng nhập) vào giỏ của tài khoản, gọi ngay sau khi đăng nhập. Dòng sai định dạng hoặc sản phẩm đã xóa/ngừng bán sẽ bị **bỏ qua lặng lẽ**, không làm hỏng việc đăng nhập. Tối đa 50 dòng.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"variantId\": {{variantId}},\n      \"quantity\": 1\n    },\n    {\n      \"variantId\": 999999,\n      \"quantity\": 1\n    },\n    {\n      \"variantId\": \"abc\",\n      \"quantity\": -1\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Chỉ gộp được 1 dòng hợp lệ', () => pm.expect(pm.response.json().merged).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Xóa khỏi giỏ",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cart",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cart"
+              ],
+              "query": []
+            },
+            "description": "Xóa một quy cách khỏi giỏ hàng.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"variantId\": {{variantId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Thêm lại vào giỏ (để đặt hàng từ giỏ)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cart",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cart"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"variantId\": {{variantId}},\n  \"quantity\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Đặt hàng",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orders"
+              ],
+              "query": []
+            },
+            "description": "Tạo đơn hàng. **Có `items`** = \"Mua ngay\" các sản phẩm đó. **Không có `items`** = đặt toàn bộ giỏ hàng (giỏ được dọn sau khi đặt). Giá và tồn kho luôn lấy từ database (không tin giá do trình duyệt gửi), kho được trừ trong 1 giao dịch an toàn. Phí ship: 30.000đ, miễn phí khi tiền hàng trên 500.000đ. Đơn chuyển khoản phải được nhân viên xác nhận đã nhận tiền mới xử lý.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverName\": \"Nguyễn Văn A\",\n  \"phone\": \"0901234567\",\n  \"shippingAddress\": \"25 Nguyễn Trãi, Phường 3, Đà Lạt, Lâm Đồng\",\n  \"note\": \"Đơn thử từ Postman (đặt từ giỏ hàng)\",\n  \"paymentMethod\": \"cod\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 201', () => pm.expect(pm.response.code).to.be.oneOf([201]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "const j = pm.response.json();",
+                  "pm.test('Có mã đơn', () => pm.expect(j.orderId).to.be.a('number'));",
+                  "pm.collectionVariables.set('orderId', j.orderId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Xem giỏ hàng sau khi đặt (phải trống)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cart",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cart"
+              ],
+              "query": []
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Giỏ đã được dọn', () => pm.expect(pm.response.json().items).to.have.lengthOf(0));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Danh sách đơn của tôi",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orders"
+              ],
+              "query": []
+            },
+            "description": "Các đơn của người đang đăng nhập, mới nhất trước."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "const id = Number(pm.collectionVariables.get('orderId'));",
+                  "pm.test('Có đơn vừa đặt', () => pm.expect(pm.response.json().orders.some(o => o.id === id)).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Chi tiết đơn của tôi",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/{{orderId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orders",
+                "{{orderId}}"
+              ],
+              "query": []
+            },
+            "description": "Chi tiết đơn. Đơn của người khác trả 404 (không tiết lộ đơn có tồn tại). Nhân viên/admin xem được mọi đơn. Đơn chuyển khoản kèm thông tin chuyển tiền và mã QR VietQR."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Đơn đang chờ xác nhận', () => pm.expect(pm.response.json().order.status).to.eql('pending'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Hủy đơn",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/{{orderId}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orders",
+                "{{orderId}}",
+                "cancel"
+              ],
+              "query": []
+            },
+            "description": "Khách tự hủy đơn **còn ở trạng thái chờ xác nhận**. Tồn kho được hoàn lại."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Hủy đơn lần 2 (phải bị từ chối)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/{{orderId}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orders",
+                "{{orderId}}",
+                "cancel"
+              ],
+              "query": []
+            },
+            "description": "Kiểm thử 409."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 409', () => pm.expect(pm.response.code).to.be.oneOf([409]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Lỗi có thông báo tiếng Việt, không lộ lỗi kỹ thuật', () => { const j = pm.response.json(); pm.expect(j.error).to.be.a('string').and.not.match(/Unexpected|SQL|ECONN|undefined|TypeError/i); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mua ngay (chuyển khoản)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orders"
+              ],
+              "query": []
+            },
+            "description": "Đơn chuyển khoản dùng cho phần thử quy trình của nhân viên.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverName\": \"Nguyễn Văn A\",\n  \"phone\": \"0901234567\",\n  \"shippingAddress\": \"25 Nguyễn Trãi, Phường 3, Đà Lạt, Lâm Đồng\",\n  \"note\": \"Đơn chuyển khoản thử từ Postman\",\n  \"paymentMethod\": \"bank\",\n  \"items\": [\n    {\n      \"variantId\": {{variantId}},\n      \"quantity\": 1\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 201', () => pm.expect(pm.response.code).to.be.oneOf([201]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.collectionVariables.set('bankOrderId', pm.response.json().orderId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Đặt hàng: số điện thoại sai",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orders"
+              ],
+              "query": []
+            },
+            "description": "Kiểm thử 400.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverName\": \"Nguyễn Văn A\",\n  \"phone\": \"123\",\n  \"shippingAddress\": \"25 Nguyễn Trãi, Phường 3, Đà Lạt\",\n  \"paymentMethod\": \"cod\",\n  \"items\": [\n    {\n      \"variantId\": {{variantId}},\n      \"quantity\": 1\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 400', () => pm.expect(pm.response.code).to.be.oneOf([400]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Lỗi có thông báo tiếng Việt, không lộ lỗi kỹ thuật', () => { const j = pm.response.json(); pm.expect(j.error).to.be.a('string').and.not.match(/Unexpected|SQL|ECONN|undefined|TypeError/i); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Đặt hàng: số lượng 0",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orders"
+              ],
+              "query": []
+            },
+            "description": "Kiểm thử 400.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverName\": \"Nguyễn Văn A\",\n  \"phone\": \"0901234567\",\n  \"shippingAddress\": \"25 Nguyễn Trãi, Phường 3, Đà Lạt\",\n  \"paymentMethod\": \"cod\",\n  \"items\": [\n    {\n      \"variantId\": {{variantId}},\n      \"quantity\": 0\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 400', () => pm.expect(pm.response.code).to.be.oneOf([400]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Lỗi có thông báo tiếng Việt, không lộ lỗi kỹ thuật', () => { const j = pm.response.json(); pm.expect(j.error).to.be.a('string').and.not.match(/Unexpected|SQL|ECONN|undefined|TypeError/i); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Đặt hàng: vượt tồn kho",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orders"
+              ],
+              "query": []
+            },
+            "description": "Kiểm thử 409: không cho mua quá tồn kho.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverName\": \"Nguyễn Văn A\",\n  \"phone\": \"0901234567\",\n  \"shippingAddress\": \"25 Nguyễn Trãi, Phường 3, Đà Lạt\",\n  \"paymentMethod\": \"cod\",\n  \"items\": [\n    {\n      \"variantId\": {{variantId}},\n      \"quantity\": 999\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 409', () => pm.expect(pm.response.code).to.be.oneOf([409]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Lỗi có thông báo tiếng Việt, không lộ lỗi kỹ thuật', () => { const j = pm.response.json(); pm.expect(j.error).to.be.a('string').and.not.match(/Unexpected|SQL|ECONN|undefined|TypeError/i); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Xem đơn không tồn tại",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orders",
+                "999999"
+              ],
+              "query": []
+            },
+            "description": "Kiểm thử 404."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 404', () => pm.expect(pm.response.code).to.be.oneOf([404]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Lỗi có thông báo tiếng Việt, không lộ lỗi kỹ thuật', () => { const j = pm.response.json(); pm.expect(j.error).to.be.a('string').and.not.match(/Unexpected|SQL|ECONN|undefined|TypeError/i); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Quản trị: nhân viên",
+      "item": [
+        {
+          "name": "Đăng nhập (nhân viên)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{staffEmail}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Vai trò là staff', () => pm.expect(pm.response.json().user.role).to.eql('staff'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Thống kê tổng quan",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/stats?range=30",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "stats"
+              ],
+              "query": [
+                {
+                  "key": "range",
+                  "value": "30"
+                }
+              ]
+            },
+            "description": "Toàn bộ số liệu cho trang Tổng quan: chỉ số kinh doanh (kèm so sánh kỳ trước), chuỗi theo ngày/tháng, cơ cấu trạng thái, thanh toán, danh mục, sản phẩm bán chạy, tồn kho, đơn mới nhất... `topCustomers` chỉ có với admin (nhân viên nhận `null`). `365` gom theo tháng."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "const j = pm.response.json();",
+                  "pm.test('Có số liệu tổng', () => pm.expect(j.totals.current).to.have.property('revenue'));",
+                  "pm.test('Chuỗi thời gian đủ 30 mốc', () => pm.expect(j.series).to.have.lengthOf(30));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Thống kê: nhân viên không thấy khách hàng chi tiêu",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/stats?range=7",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "stats"
+              ],
+              "query": [
+                {
+                  "key": "range",
+                  "value": "7"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('topCustomers là null với nhân viên', () => pm.expect(pm.response.json().topCustomers).to.eql(null));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Danh sách đơn hàng",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/orders?status=all&page=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "orders"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "all"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Danh sách đơn có lọc, tìm kiếm và phân trang. `counts` là số đơn từng trạng thái (cho các tab)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Có mảng orders và counts', () => { const j = pm.response.json(); pm.expect(j.orders).to.be.an('array'); pm.expect(j.counts).to.have.property('all'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Chi tiết đơn (quản trị)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/orders/{{bankOrderId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "orders",
+                "{{bankOrderId}}"
+              ],
+              "query": []
+            },
+            "description": "Chi tiết đơn kèm thông tin khách hàng và nhật ký xử lý (ai đổi gì, lúc nào)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cập nhật đơn: xử lý khi chưa nhận tiền (bị chặn)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/orders/{{bankOrderId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "orders",
+                "{{bankOrderId}}"
+              ],
+              "query": []
+            },
+            "description": "Kiểm thử quy tắc: đơn chuyển khoản chưa nhận tiền không được xử lý.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"processing\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 409', () => pm.expect(pm.response.code).to.be.oneOf([409]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Lỗi có thông báo tiếng Việt, không lộ lỗi kỹ thuật', () => { const j = pm.response.json(); pm.expect(j.error).to.be.a('string').and.not.match(/Unexpected|SQL|ECONN|undefined|TypeError/i); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cập nhật đơn: xác nhận đã nhận tiền",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/orders/{{bankOrderId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "orders",
+                "{{bankOrderId}}"
+              ],
+              "query": []
+            },
+            "description": "Cập nhật đơn: gửi **`markPaid: true`** để xác nhận đã nhận tiền (đơn chuyển khoản), hoặc gửi **`status`** để chuyển trạng thái. Luồng hợp lệ: `pending → processing → shipped → delivered` (hủy được khi còn pending/processing). Mọi thay đổi đều được ghi nhật ký. Đơn COD giao xong tự chuyển thành đã thanh toán.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"markPaid\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Chuyển trạng thái → processing",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/orders/{{bankOrderId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "orders",
+                "{{bankOrderId}}"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"processing\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Chuyển trạng thái → shipped",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/orders/{{bankOrderId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "orders",
+                "{{bankOrderId}}"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"shipped\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Chuyển trạng thái → delivered",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/orders/{{bankOrderId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "orders",
+                "{{bankOrderId}}"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"delivered\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Lùi trạng thái (bị chặn)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/orders/{{bankOrderId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "orders",
+                "{{bankOrderId}}"
+              ],
+              "query": []
+            },
+            "description": "Kiểm thử 409.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"pending\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 409', () => pm.expect(pm.response.code).to.be.oneOf([409]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Lỗi có thông báo tiếng Việt, không lộ lỗi kỹ thuật', () => { const j = pm.response.json(); pm.expect(j.error).to.be.a('string').and.not.match(/Unexpected|SQL|ECONN|undefined|TypeError/i); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Danh sách sản phẩm (quản trị)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "products"
+              ],
+              "query": []
+            },
+            "description": "Mọi sản phẩm (cả đang ẩn) kèm cảnh báo tồn kho thấp và danh sách danh mục."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.collectionVariables.set('categoryId', pm.response.json().categories[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tạo sản phẩm",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "products"
+              ],
+              "query": []
+            },
+            "description": "Tạo sản phẩm cùng các quy cách (1–20 quy cách, tên không trùng).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Sản phẩm thử từ Postman\",\n  \"categoryId\": {{categoryId}},\n  \"description\": \"Tạo tự động bởi Postman\",\n  \"region\": \"Đà Lạt\",\n  \"imageUrl\": \"\",\n  \"isActive\": true,\n  \"variants\": [\n    {\n      \"name\": \"250g\",\n      \"price\": 50000,\n      \"stock\": 10\n    },\n    {\n      \"name\": \"500g\",\n      \"price\": 90000,\n      \"stock\": 5\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 201', () => pm.expect(pm.response.code).to.be.oneOf([201]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.collectionVariables.set('newProductId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tạo sản phẩm: dữ liệu rỗng",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "products"
+              ],
+              "query": []
+            },
+            "description": "Kiểm thử 400.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 400', () => pm.expect(pm.response.code).to.be.oneOf([400]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Lỗi có thông báo tiếng Việt, không lộ lỗi kỹ thuật', () => { const j = pm.response.json(); pm.expect(j.error).to.be.a('string').and.not.match(/Unexpected|SQL|ECONN|undefined|TypeError/i); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Chi tiết sản phẩm (quản trị)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/products/{{newProductId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "products",
+                "{{newProductId}}"
+              ],
+              "query": []
+            },
+            "description": "Chi tiết một sản phẩm để đổ vào form sửa."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sửa sản phẩm",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/products/{{newProductId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "products",
+                "{{newProductId}}"
+              ],
+              "query": []
+            },
+            "description": "Sửa toàn bộ sản phẩm. Quy cách có `id` = sửa; không có `id` = thêm mới; quy cách cũ không còn trong danh sách sẽ bị xóa (nếu chưa có đơn).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Sản phẩm thử từ Postman (đã sửa)\",\n  \"categoryId\": {{categoryId}},\n  \"description\": \"Đã sửa\",\n  \"region\": \"Đà Lạt\",\n  \"imageUrl\": \"\",\n  \"isActive\": true,\n  \"variants\": [\n    {\n      \"name\": \"250g\",\n      \"price\": 55000,\n      \"stock\": 8\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ẩn / hiện sản phẩm",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/products/{{newProductId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "products",
+                "{{newProductId}}"
+              ],
+              "query": []
+            },
+            "description": "Bật/tắt bán sản phẩm (sản phẩm ẩn không hiện ở cửa hàng).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Danh sách câu chuyện (quản trị)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/stories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "stories"
+              ],
+              "query": []
+            },
+            "description": "Mọi bài viết, gồm cả bản nháp."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tạo câu chuyện",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/stories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "stories"
+              ],
+              "query": []
+            },
+            "description": "Tạo bài viết. Đường dẫn (`slug`) được tự sinh từ tiêu đề.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Câu chuyện thử từ Postman\",\n  \"excerpt\": \"Tóm tắt thử\",\n  \"region\": \"Đà Lạt\",\n  \"coverUrl\": \"\",\n  \"content\": \"Nội dung câu chuyện thử nghiệm API, đủ dài hơn năm mươi ký tự để được phép đăng công khai.\",\n  \"isPublished\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 201', () => pm.expect(pm.response.code).to.be.oneOf([201]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.collectionVariables.set('newStoryId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Chi tiết câu chuyện (quản trị)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/stories/{{newStoryId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "stories",
+                "{{newStoryId}}"
+              ],
+              "query": []
+            },
+            "description": "Chi tiết bài viết (kể cả nháp) để sửa."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sửa câu chuyện",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/stories/{{newStoryId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "stories",
+                "{{newStoryId}}"
+              ],
+              "query": []
+            },
+            "description": "Sửa bài viết.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Câu chuyện thử từ Postman (đã sửa)\",\n  \"excerpt\": \"\",\n  \"region\": \"Đà Lạt\",\n  \"coverUrl\": \"\",\n  \"content\": \"Nội dung đã sửa, dài hơn năm mươi ký tự để được phép đăng công khai.\",\n  \"isPublished\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Đăng / gỡ bài",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/stories/{{newStoryId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "stories",
+                "{{newStoryId}}"
+              ],
+              "query": []
+            },
+            "description": "Đăng bài công khai hoặc chuyển về nháp.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isPublished\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tải ảnh lên: chưa chọn file",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "upload"
+              ],
+              "query": []
+            },
+            "description": "Kiểm thử 400: gửi form-data nhưng không có file.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "note",
+                  "value": "khong gui file",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 400', () => pm.expect(pm.response.code).to.be.oneOf([400]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Lỗi có thông báo tiếng Việt, không lộ lỗi kỹ thuật', () => { const j = pm.response.json(); pm.expect(j.error).to.be.a('string').and.not.match(/Unexpected|SQL|ECONN|undefined|TypeError/i); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Nhân viên KHÔNG được xem danh sách tài khoản",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users"
+              ],
+              "query": []
+            },
+            "description": "Kiểm thử phân quyền: chỉ admin."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 403', () => pm.expect(pm.response.code).to.be.oneOf([403]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Lỗi có thông báo tiếng Việt, không lộ lỗi kỹ thuật', () => { const j = pm.response.json(); pm.expect(j.error).to.be.a('string').and.not.match(/Unexpected|SQL|ECONN|undefined|TypeError/i); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Quản trị: admin",
+      "item": [
+        {
+          "name": "Đăng nhập (admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Vai trò là admin', () => pm.expect(pm.response.json().user.role).to.eql('admin'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Thống kê: admin thấy khách hàng chi tiêu nhiều",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/stats?range=90",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "stats"
+              ],
+              "query": [
+                {
+                  "key": "range",
+                  "value": "90"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Admin có topCustomers', () => pm.expect(pm.response.json().topCustomers).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Danh sách tài khoản",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users"
+              ],
+              "query": []
+            },
+            "description": "Chỉ **admin**. Kèm số đơn của từng tài khoản và thời điểm hết khóa (nếu đang bị khóa)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Có mảng users', () => pm.expect(pm.response.json().users).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mở khóa tài khoản",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users/3",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users",
+                "3"
+              ],
+              "query": []
+            },
+            "description": "Chỉ **admin**: đổi vai trò (`role`) hoặc mở khóa (`unlock: true`). Không thể tự đổi quyền của chính mình.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"unlock\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tự hạ quyền chính mình (bị chặn)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users",
+                "1"
+              ],
+              "query": []
+            },
+            "description": "Kiểm thử 409.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"customer\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 409', () => pm.expect(pm.response.code).to.be.oneOf([409]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Lỗi có thông báo tiếng Việt, không lộ lỗi kỹ thuật', () => { const j = pm.response.json(); pm.expect(j.error).to.be.a('string').and.not.match(/Unexpected|SQL|ECONN|undefined|TypeError/i); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Xóa sản phẩm",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/products/{{newProductId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "products",
+                "{{newProductId}}"
+              ],
+              "query": []
+            },
+            "description": "Chỉ **admin**. Sản phẩm đã có đơn hàng thì KHÔNG xóa được (mã 409), hãy chuyển sang trạng thái ẩn."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Xóa sản phẩm đã có đơn (bị chặn)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/products/{{productId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "products",
+                "{{productId}}"
+              ],
+              "query": []
+            },
+            "description": "Kiểm thử 409: sản phẩm đã bán không được xóa."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 409', () => pm.expect(pm.response.code).to.be.oneOf([409]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Lỗi có thông báo tiếng Việt, không lộ lỗi kỹ thuật', () => { const j = pm.response.json(); pm.expect(j.error).to.be.a('string').and.not.match(/Unexpected|SQL|ECONN|undefined|TypeError/i); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Xóa câu chuyện",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/stories/{{newStoryId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "stories",
+                "{{newStoryId}}"
+              ],
+              "query": []
+            },
+            "description": "Chỉ **admin**."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6. Kiểm thử phân quyền & đăng xuất",
+      "item": [
+        {
+          "name": "Đăng nhập lại bằng khách hàng",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{customerEmail}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Khách vào thống kê quản trị (phải 403)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "stats"
+              ],
+              "query": []
+            },
+            "description": "Kiểm thử phân quyền."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 403', () => pm.expect(pm.response.code).to.be.oneOf([403]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Lỗi có thông báo tiếng Việt, không lộ lỗi kỹ thuật', () => { const j = pm.response.json(); pm.expect(j.error).to.be.a('string').and.not.match(/Unexpected|SQL|ECONN|undefined|TypeError/i); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Khách vào danh sách đơn quản trị (phải 403)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "orders"
+              ],
+              "query": []
+            },
+            "description": "Kiểm thử phân quyền."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 403', () => pm.expect(pm.response.code).to.be.oneOf([403]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Lỗi có thông báo tiếng Việt, không lộ lỗi kỹ thuật', () => { const j = pm.response.json(); pm.expect(j.error).to.be.a('string').and.not.match(/Unexpected|SQL|ECONN|undefined|TypeError/i); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Khách vào danh sách tài khoản (phải 403)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users"
+              ],
+              "query": []
+            },
+            "description": "Kiểm thử phân quyền."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 403', () => pm.expect(pm.response.code).to.be.oneOf([403]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Lỗi có thông báo tiếng Việt, không lộ lỗi kỹ thuật', () => { const j = pm.response.json(); pm.expect(j.error).to.be.a('string').and.not.match(/Unexpected|SQL|ECONN|undefined|TypeError/i); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Khách tạo sản phẩm (phải 403)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "products"
+              ],
+              "query": []
+            },
+            "description": "Kiểm thử phân quyền.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 403', () => pm.expect(pm.response.code).to.be.oneOf([403]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Lỗi có thông báo tiếng Việt, không lộ lỗi kỹ thuật', () => { const j = pm.response.json(); pm.expect(j.error).to.be.a('string').and.not.match(/Unexpected|SQL|ECONN|undefined|TypeError/i); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Đăng xuất",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ],
+              "query": []
+            },
+            "description": "Xóa cookie đăng nhập.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sau khi đăng xuất: xem giỏ hàng (phải 401)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cart",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cart"
+              ],
+              "query": []
+            },
+            "description": "Kiểm thử."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 401', () => pm.expect(pm.response.code).to.be.oneOf([401]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Lỗi có thông báo tiếng Việt, không lộ lỗi kỹ thuật', () => { const j = pm.response.json(); pm.expect(j.error).to.be.a('string').and.not.match(/Unexpected|SQL|ECONN|undefined|TypeError/i); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sau khi đăng xuất: vào thống kê (phải 401)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "stats"
+              ],
+              "query": []
+            },
+            "description": "Kiểm thử."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mã trạng thái là 401', () => pm.expect(pm.response.code).to.be.oneOf([401]));",
+                  "pm.test('Phản hồi là JSON', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+                  "pm.test('Lỗi có thông báo tiếng Việt, không lộ lỗi kỹ thuật', () => { const j = pm.response.json(); pm.expect(j.error).to.be.a('string').and.not.match(/Unexpected|SQL|ECONN|undefined|TypeError/i); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "7. Thủ công (cần Gmail / chọn file)",
+      "item": [
+        {
+          "name": "Đăng nhập [thủ công]",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ],
+              "query": []
+            },
+            "description": "Đăng nhập bằng email + mật khẩu. Thành công thì máy chủ đặt cookie `session_token` (httpOnly). Sai 5 lần liên tiếp sẽ khóa tài khoản 15 phút (mã 423). `remember = true` giữ đăng nhập 30 ngày.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"khacha@gmail.com\",\n  \"password\": \"123456\",\n  \"remember\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Đăng ký bước 1: gửi mã OTP [thủ công]",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/send-otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "send-otp"
+              ],
+              "query": []
+            },
+            "description": "Tạo tài khoản chờ xác thực và gửi mã OTP 6 số qua email (sống 3 phút). Gọi lại API này để \"gửi lại mã\" (đợi 60 giây giữa 2 lần). **Cần cấu hình Gmail trong .env** nên không có trong bộ test tự động.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"ten-ban@gmail.com\",\n  \"full_name\": \"Nguyễn Văn A\",\n  \"password\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Đăng ký bước 2: xác thực OTP [thủ công]",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/verify-otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "verify-otp"
+              ],
+              "query": []
+            },
+            "description": "Nhập mã OTP để kích hoạt tài khoản. Nhập sai 5 lần thì mã bị hủy (mã 429), phải gửi lại mã mới.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"ten-ban@gmail.com\",\n  \"otp\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Quên mật khẩu bước 1: gửi mã OTP [thủ công]",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/forgot-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "forgot-password"
+              ],
+              "query": []
+            },
+            "description": "Gửi mã OTP đặt lại mật khẩu. Luôn trả `ok` dù email có tồn tại hay không (để không lộ email nào đã đăng ký). **Cần cấu hình Gmail.**",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"khacha@gmail.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Quên mật khẩu bước 2: đặt mật khẩu mới [thủ công]",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/reset-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "reset-password"
+              ],
+              "query": []
+            },
+            "description": "Dùng mã OTP để đặt mật khẩu mới (đồng thời mở khóa tài khoản). Nhập sai OTP 5 lần thì mã bị hủy.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"khacha@gmail.com\",\n  \"otp\": \"123456\",\n  \"password\": \"matkhaumoi\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Tải ảnh lên [thủ công]",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "upload"
+              ],
+              "query": []
+            },
+            "description": "Tải ảnh JPG/PNG/WEBP (tối đa 3MB) lên thư mục `public/images/...`. Loại ảnh được nhận diện bằng nội dung file, không tin đuôi file. Dùng `form-data` với khóa `file`. Trả về đường dẫn để gán vào `imageUrl` / `coverUrl`.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { validateProductInput } from "@/lib/productRules";
 import { formatPrice } from "@/lib/orderUtils";
 
+import { friendlyError } from "@/lib/friendlyError";
 let rowCounter = 0;
 const newRow = (data = {}) => ({
   key: `row-${++rowCounter}`,
@@ -89,7 +90,7 @@ export default function ProductForm({ productId }) {
           }
         }
       } catch (err) {
-        if (!cancelled) setLoadError(err.message);
+        if (!cancelled) setLoadError(friendlyError(err));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -128,7 +129,7 @@ export default function ProductForm({ productId }) {
 
       setImageUrl(json.url);
     } catch (err) {
-      setUploadError(err.message);
+      setUploadError(friendlyError(err));
     } finally {
       setUploading(false);
       if (fileInput.current) fileInput.current.value = "";
@@ -171,7 +172,7 @@ export default function ProductForm({ productId }) {
 
       router.push("/admin/products");
     } catch (err) {
-      setServerError(err.message);
+      setServerError(friendlyError(err));
       setSaving(false);
     }
   }

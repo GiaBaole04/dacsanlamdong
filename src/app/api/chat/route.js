@@ -1,5 +1,6 @@
 import { pool } from '@/lib/db';
 import { NextResponse } from 'next/server';
+import { withApi } from '@/lib/apiHandler';
 import {
   MAX_CARDS,
   buildCatalog,
@@ -62,7 +63,7 @@ function fail(message, status) {
   return NextResponse.json({ error: message }, { status });
 }
 
-export async function POST(request) {
+async function handlePOST(request) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     console.error('chat: thiếu GEMINI_API_KEY trong file .env');
@@ -177,3 +178,6 @@ export async function POST(request) {
     return fail('Có lỗi xảy ra, bạn thử lại sau nhé.', 500);
   }
 }
+
+// Bọc từng handler để lỗi bất ngờ (mất kết nối database...) luôn trả về JSON thân thiện, không làm sập API
+export const POST = withApi(handlePOST);

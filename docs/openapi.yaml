@@ -1,0 +1,2560 @@
+openapi: 3.0.3
+info:
+  title: API Đặc Sản Lâm Đồng
+  version: 1.0.0
+  description: 'API của website bán đặc sản Lâm Đồng (Next.js + MariaDB).
+
+
+    **Xác thực:** đăng nhập bằng `POST /api/auth/login`; máy chủ đặt cookie `session_token` (JWT, httpOnly). Trình
+    duyệt/Postman tự gửi lại cookie này.
+
+
+    **3 vai trò:** `customer` (khách), `staff` (nhân viên), `admin`. Vai trò luôn được kiểm tra lại từ database
+    ở mỗi request.
+
+
+    **Quy ước lỗi:** mọi lỗi đều là JSON `{ "error": "thông báo tiếng Việt" }` với mã HTTP phù hợp (400 dữ liệu
+    sai, 401 chưa đăng nhập, 403 không đủ quyền, 404 không có, 409 xung đột nghiệp vụ, 429 quá nhiều lần thử, 500
+    lỗi máy chủ). Lỗi 500 luôn là câu chung chung, không lộ chi tiết kỹ thuật.'
+servers:
+- url: http://localhost:3000
+  description: Chạy local (npm run dev)
+tags:
+- name: Công khai
+  description: 'Không cần đăng nhập: sản phẩm, câu chuyện, chatbot'
+- name: Xác thực
+  description: Đăng nhập, đăng ký (OTP email), quên mật khẩu
+- name: Giỏ hàng
+  description: Giỏ hàng của người đăng nhập
+- name: Đơn hàng (khách)
+  description: Đặt hàng, xem và hủy đơn của chính mình
+- name: 'Quản trị: thống kê'
+  description: Trang Tổng quan (nhân viên + admin)
+- name: 'Quản trị: đơn hàng'
+  description: Xử lý đơn hàng (nhân viên + admin)
+- name: 'Quản trị: sản phẩm'
+  description: Quản lý sản phẩm (xóa chỉ admin)
+- name: 'Quản trị: câu chuyện'
+  description: Quản lý bài viết (xóa chỉ admin)
+- name: 'Quản trị: tải ảnh'
+  description: Tải ảnh lên
+- name: 'Quản trị: tài khoản'
+  description: Quản lý tài khoản (chỉ admin)
+paths:
+  /api/products:
+    get:
+      tags:
+      - Công khai
+      summary: Danh sách sản phẩm
+      description: 'Trả về mọi sản phẩm đang bán kèm các quy cách (giá, tồn kho). Lưu ý `price` là chuỗi số thập
+        phân.
+
+
+        **Quyền truy cập:** Công khai'
+      responses:
+        '200':
+          description: Danh sách sản phẩm
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: &id002
+                      type: integer
+                    name: &id001
+                      type: string
+                    description: *id001
+                    region: *id001
+                    image_note: *id001
+                    image_url: *id001
+                    category: *id001
+                    variants:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id: *id002
+                          product_id: *id002
+                          variant_name: *id001
+                          price:
+                            type: string
+                            description: Chuỗi số thập phân, ví dụ "120000.00"
+                          stock: *id002
+        '500':
+          description: Lỗi máy chủ (thông báo chung, không lộ chi tiết kỹ thuật)
+          content:
+            application/json:
+              schema: &id003
+                $ref: '#/components/schemas/Error'
+  /api/products/{id}/also-bought:
+    get:
+      tags:
+      - Công khai
+      summary: Sản phẩm thường mua cùng
+      description: 'Gợi ý "khách mua sản phẩm này cũng mua" dựa trên luật kết hợp từ lịch sử đơn hàng.
+
+
+        **Quyền truy cập:** Công khai'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: Mã sản phẩm
+        schema: *id002
+      responses:
+        '200':
+          description: Gợi ý
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalOrders: *id002
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        productId: *id002
+                        ordersTogether: *id002
+                        confidence: &id008
+                          type: number
+        '400':
+          description: Mã sản phẩm không hợp lệ
+          content:
+            application/json:
+              schema: *id003
+        '500':
+          description: Lỗi máy chủ (thông báo chung, không lộ chi tiết kỹ thuật)
+          content:
+            application/json:
+              schema: *id003
+  /api/stories:
+    get:
+      tags:
+      - Công khai
+      summary: Danh sách câu chuyện
+      description: 'Chỉ trả các bài đã đăng. Bản nháp không bao giờ xuất hiện ở đây.
+
+
+        **Quyền truy cập:** Công khai'
+      responses:
+        '200':
+          description: Danh sách bài đã đăng
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  stories:
+                    type: array
+                    items: &id005
+                      type: object
+                      properties:
+                        id: *id002
+                        slug: *id001
+                        title: *id001
+                        excerpt: *id001
+                        region: *id001
+                        coverUrl: *id001
+                        readingMinutes: *id002
+                        createdAt: &id004
+                          type: string
+                          format: date-time
+  /api/stories/{slug}:
+    get:
+      tags:
+      - Công khai
+      summary: Chi tiết câu chuyện
+      description: 'Chi tiết một bài đã đăng, kèm bài liên quan và sản phẩm cùng vùng.
+
+
+        **Quyền truy cập:** Công khai'
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        description: Đường dẫn bài viết (chữ thường, số, dấu gạch ngang)
+        schema: *id001
+      responses:
+        '200':
+          description: Chi tiết bài viết
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  story:
+                    type: object
+                    properties:
+                      id: *id002
+                      slug: *id001
+                      title: *id001
+                      excerpt: *id001
+                      content: *id001
+                      region: *id001
+                      coverUrl: *id001
+                      readingMinutes: *id002
+                      createdAt: *id004
+                      updatedAt: *id004
+                  related:
+                    type: array
+                    items: *id005
+                  products:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: *id002
+                        name: *id001
+                        imageUrl: *id001
+                        region: *id001
+                        minPrice: *id002
+        '404':
+          description: Không tìm thấy bài viết
+          content:
+            application/json:
+              schema: *id003
+  /api/chat:
+    post:
+      tags:
+      - Công khai
+      summary: Chatbot tư vấn sản phẩm
+      description: 'Chatbot (Google Gemini) gợi ý sản phẩm. Khóa API chỉ nằm ở máy chủ. Giới hạn 12 câu hỏi / 10
+        phút mỗi địa chỉ IP. Trả 503 nếu chưa cấu hình `GEMINI_API_KEY`.
+
+
+        **Quyền truy cập:** Công khai'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                messages:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      role:
+                        type: string
+                        enum:
+                        - user
+                        - assistant
+                      text: *id001
+                    required:
+                    - role
+                    - text
+              required:
+              - messages
+            example:
+              messages:
+              - role: user
+                text: Gợi ý cho mình cà phê dưới 150k
+      responses:
+        '200':
+          description: Câu trả lời + sản phẩm gợi ý
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reply: *id001
+                  products:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: *id002
+                        name: *id001
+                        region: *id001
+                        category: *id001
+                        image_url: *id001
+                        minPrice: *id002
+        '400':
+          description: Chưa nhập câu hỏi / JSON sai
+          content:
+            application/json:
+              schema: *id003
+        '429':
+          description: Hỏi quá nhanh hoặc hết lượt trong ngày
+          content:
+            application/json:
+              schema: *id003
+        '502':
+          description: Trợ lý tạm thời chưa trả lời được
+          content:
+            application/json:
+              schema: *id003
+        '503':
+          description: Chưa bật chatbot (thiếu GEMINI_API_KEY)
+          content:
+            application/json:
+              schema: *id003
+        '504':
+          description: Trợ lý trả lời quá lâu
+          content:
+            application/json:
+              schema: *id003
+  /api/auth/me:
+    get:
+      tags:
+      - Xác thực
+      summary: Ai đang đăng nhập? (chưa đăng nhập)
+      description: 'Trả thông tin người đang đăng nhập; vai trò luôn đọc lại từ database. Chưa đăng nhập thì `user`
+        là `null` (không phải lỗi).
+
+
+        **Quyền truy cập:** Công khai'
+      responses:
+        '200':
+          description: Thông tin người dùng
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    type: object
+                    properties:
+                      id: *id002
+                      name: *id001
+                      role:
+                        $ref: '#/components/schemas/Role'
+                    nullable: true
+        '500':
+          description: Lỗi máy chủ (thông báo chung, không lộ chi tiết kỹ thuật)
+          content:
+            application/json:
+              schema: *id003
+  /api/auth/login:
+    post:
+      tags:
+      - Xác thực
+      summary: Đăng nhập
+      description: 'Đăng nhập bằng email + mật khẩu. Thành công thì máy chủ đặt cookie `session_token` (httpOnly).
+        Sai 5 lần liên tiếp sẽ khóa tài khoản 15 phút (mã 423). `remember = true` giữ đăng nhập 30 ngày.
+
+
+        **Quyền truy cập:** Công khai'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: *id001
+                password:
+                  type: string
+                  description: Tối đa 200 ký tự
+                remember: &id006
+                  type: boolean
+              required:
+              - email
+              - password
+            example:
+              email: khacha@gmail.com
+              password: '123456'
+              remember: false
+      responses:
+        '200':
+          description: Đăng nhập thành công (kèm cookie session_token)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: *id006
+                  user:
+                    type: object
+                    properties:
+                      id: *id002
+                      name: *id001
+                      role:
+                        $ref: '#/components/schemas/Role'
+        '400':
+          description: Thiếu hoặc sai kiểu email / mật khẩu, hoặc JSON hỏng
+          content:
+            application/json:
+              schema: *id003
+        '401':
+          description: Sai email hoặc mật khẩu (kèm số lần thử còn lại)
+          content:
+            application/json:
+              schema: *id003
+        '403':
+          description: Tài khoản chưa xác thực email
+          content:
+            application/json:
+              schema: *id003
+        '423':
+          description: Tài khoản đang bị khóa tạm thời
+          content:
+            application/json:
+              schema: *id003
+        '500':
+          description: Lỗi máy chủ (thông báo chung, không lộ chi tiết kỹ thuật)
+          content:
+            application/json:
+              schema: *id003
+  /api/auth/send-otp:
+    post:
+      tags:
+      - Xác thực
+      summary: 'Đăng ký bước 1: gửi mã OTP'
+      description: 'Tạo tài khoản chờ xác thực và gửi mã OTP 6 số qua email (sống 3 phút). Gọi lại API này để "gửi
+        lại mã" (đợi 60 giây giữa 2 lần). **Cần cấu hình Gmail trong .env** nên không có trong bộ test tự động.
+
+
+        **Quyền truy cập:** Công khai'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: *id001
+                full_name:
+                  type: string
+                  description: 2–100 ký tự
+                password:
+                  type: string
+                  description: 6–72 ký tự
+              required:
+              - email
+              - full_name
+              - password
+            example:
+              email: ten-ban@gmail.com
+              full_name: Nguyễn Văn A
+              password: '123456'
+      responses:
+        '200':
+          description: Đã gửi mã OTP
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: *id006
+                  expiresInSeconds: *id002
+        '400':
+          description: Email / họ tên / mật khẩu không hợp lệ
+          content:
+            application/json:
+              schema: *id003
+        '409':
+          description: Email đã được đăng ký
+          content:
+            application/json:
+              schema: *id003
+        '429':
+          description: Gửi lại quá nhanh (chờ 60 giây)
+          content:
+            application/json:
+              schema: *id003
+        '500':
+          description: Lỗi máy chủ (thông báo chung, không lộ chi tiết kỹ thuật)
+          content:
+            application/json:
+              schema: *id003
+  /api/auth/verify-otp:
+    post:
+      tags:
+      - Xác thực
+      summary: 'Đăng ký bước 2: xác thực OTP'
+      description: 'Nhập mã OTP để kích hoạt tài khoản. Nhập sai 5 lần thì mã bị hủy (mã 429), phải gửi lại mã mới.
+
+
+        **Quyền truy cập:** Công khai'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: *id001
+                otp:
+                  type: string
+                  description: 6 chữ số
+              required:
+              - email
+              - otp
+            example:
+              email: ten-ban@gmail.com
+              otp: '123456'
+      responses:
+        '200':
+          description: Kích hoạt thành công
+          content:
+            application/json:
+              schema: &id007
+                type: object
+                properties:
+                  ok: *id006
+        '400':
+          description: OTP sai / hết hạn / không đúng định dạng
+          content:
+            application/json:
+              schema: *id003
+        '404':
+          description: Không có yêu cầu đăng ký cho email này
+          content:
+            application/json:
+              schema: *id003
+        '429':
+          description: Nhập sai quá 5 lần, mã đã bị hủy
+          content:
+            application/json:
+              schema: *id003
+        '500':
+          description: Lỗi máy chủ (thông báo chung, không lộ chi tiết kỹ thuật)
+          content:
+            application/json:
+              schema: *id003
+  /api/auth/forgot-password:
+    post:
+      tags:
+      - Xác thực
+      summary: 'Quên mật khẩu bước 1: gửi mã OTP'
+      description: 'Gửi mã OTP đặt lại mật khẩu. Luôn trả `ok` dù email có tồn tại hay không (để không lộ email
+        nào đã đăng ký). **Cần cấu hình Gmail.**
+
+
+        **Quyền truy cập:** Công khai'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: *id001
+              required:
+              - email
+            example:
+              email: khacha@gmail.com
+      responses:
+        '200':
+          description: Đã xử lý (không tiết lộ email có tồn tại)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: *id006
+                  expiresInSeconds: *id002
+        '400':
+          description: Email không hợp lệ
+          content:
+            application/json:
+              schema: *id003
+        '500':
+          description: Lỗi máy chủ (thông báo chung, không lộ chi tiết kỹ thuật)
+          content:
+            application/json:
+              schema: *id003
+  /api/auth/reset-password:
+    post:
+      tags:
+      - Xác thực
+      summary: 'Quên mật khẩu bước 2: đặt mật khẩu mới'
+      description: 'Dùng mã OTP để đặt mật khẩu mới (đồng thời mở khóa tài khoản). Nhập sai OTP 5 lần thì mã bị
+        hủy.
+
+
+        **Quyền truy cập:** Công khai'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: *id001
+                otp:
+                  type: string
+                  description: 6 chữ số
+                password:
+                  type: string
+                  description: 6–72 ký tự
+              required:
+              - email
+              - otp
+              - password
+            example:
+              email: khacha@gmail.com
+              otp: '123456'
+              password: matkhaumoi
+      responses:
+        '200':
+          description: Đã đổi mật khẩu
+          content:
+            application/json:
+              schema: *id007
+        '400':
+          description: Thiếu thông tin / OTP sai hoặc hết hạn / mật khẩu không hợp lệ
+          content:
+            application/json:
+              schema: *id003
+        '429':
+          description: Nhập sai quá 5 lần
+          content:
+            application/json:
+              schema: *id003
+        '500':
+          description: Lỗi máy chủ (thông báo chung, không lộ chi tiết kỹ thuật)
+          content:
+            application/json:
+              schema: *id003
+  /api/cart:
+    get:
+      tags:
+      - Giỏ hàng
+      summary: Xem giỏ hàng
+      description: 'Giỏ hàng của người đang đăng nhập.
+
+
+        **Quyền truy cập:** Cần đăng nhập (mọi vai trò)'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          description: Giỏ hàng
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        itemId: *id002
+                        variantId: *id002
+                        productId: *id002
+                        name: *id001
+                        image_url: *id001
+                        region: *id001
+                        variantName: *id001
+                        price: *id008
+                        stock: *id002
+                        quantity: *id002
+        '401':
+          description: Chưa đăng nhập
+          content:
+            application/json:
+              schema: *id003
+        '500':
+          description: Lỗi máy chủ (thông báo chung, không lộ chi tiết kỹ thuật)
+          content:
+            application/json:
+              schema: *id003
+    post:
+      tags:
+      - Giỏ hàng
+      summary: Thêm vào giỏ
+      description: 'Thêm sản phẩm vào giỏ. Đã có thì cộng dồn số lượng (tối đa 999). Số lượng phải là số nguyên
+        1–999; sản phẩm phải tồn tại, đang bán và còn hàng.
+
+
+        **Quyền truy cập:** Cần đăng nhập (mọi vai trò)'
+      security:
+      - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                variantId: *id002
+                quantity:
+                  type: integer
+                  minimum: 1
+                  maximum: 999
+              required:
+              - variantId
+              - quantity
+            example:
+              variantId: 1
+              quantity: 2
+      responses:
+        '200':
+          description: Đã thêm
+          content:
+            application/json:
+              schema: *id007
+        '400':
+          description: Mã sản phẩm / số lượng không hợp lệ
+          content:
+            application/json:
+              schema: *id003
+        '401':
+          description: Chưa đăng nhập
+          content:
+            application/json:
+              schema: *id003
+        '404':
+          description: Sản phẩm không tồn tại hoặc đã ngừng bán
+          content:
+            application/json:
+              schema: *id003
+        '409':
+          description: Sản phẩm đã hết hàng
+          content:
+            application/json:
+              schema: *id003
+        '500':
+          description: Lỗi máy chủ (thông báo chung, không lộ chi tiết kỹ thuật)
+          content:
+            application/json:
+              schema: *id003
+    put:
+      tags:
+      - Giỏ hàng
+      summary: Đổi số lượng trong giỏ
+      description: 'Đặt số lượng CHÍNH XÁC cho một quy cách đang có trong giỏ (nút +/- ở trang giỏ hàng).
+
+
+        **Quyền truy cập:** Cần đăng nhập (mọi vai trò)'
+      security:
+      - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                variantId: *id002
+                quantity:
+                  type: integer
+                  minimum: 1
+                  maximum: 999
+              required:
+              - variantId
+              - quantity
+            example:
+              variantId: 1
+              quantity: 3
+      responses:
+        '200':
+          description: Đã cập nhật
+          content:
+            application/json:
+              schema: *id007
+        '400':
+          description: Mã / số lượng không hợp lệ
+          content:
+            application/json:
+              schema: *id003
+        '401':
+          description: Chưa đăng nhập
+          content:
+            application/json:
+              schema: *id003
+        '404':
+          description: Sản phẩm không có trong giỏ
+          content:
+            application/json:
+              schema: *id003
+        '500':
+          description: Lỗi máy chủ (thông báo chung, không lộ chi tiết kỹ thuật)
+          content:
+            application/json:
+              schema: *id003
+    delete:
+      tags:
+      - Giỏ hàng
+      summary: Xóa khỏi giỏ
+      description: 'Xóa một quy cách khỏi giỏ hàng.
+
+
+        **Quyền truy cập:** Cần đăng nhập (mọi vai trò)'
+      security:
+      - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                variantId: *id002
+              required:
+              - variantId
+            example:
+              variantId: 1
+      responses:
+        '200':
+          description: Đã xóa
+          content:
+            application/json:
+              schema: *id007
+        '400':
+          description: Mã sản phẩm không hợp lệ
+          content:
+            application/json:
+              schema: *id003
+        '401':
+          description: Chưa đăng nhập
+          content:
+            application/json:
+              schema: *id003
+        '500':
+          description: Lỗi máy chủ (thông báo chung, không lộ chi tiết kỹ thuật)
+          content:
+            application/json:
+              schema: *id003
+  /api/cart/merge:
+    post:
+      tags:
+      - Giỏ hàng
+      summary: Gộp giỏ khách vãng lai
+      description: 'Gộp giỏ hàng lưu tạm ở trình duyệt (khi chưa đăng nhập) vào giỏ của tài khoản, gọi ngay sau
+        khi đăng nhập. Dòng sai định dạng hoặc sản phẩm đã xóa/ngừng bán sẽ bị **bỏ qua lặng lẽ**, không làm hỏng
+        việc đăng nhập. Tối đa 50 dòng.
+
+
+        **Quyền truy cập:** Cần đăng nhập (mọi vai trò)'
+      security:
+      - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      variantId: *id002
+                      quantity: *id002
+              required:
+              - items
+            example:
+              items:
+              - variantId: 1
+                quantity: 1
+      responses:
+        '200':
+          description: Đã gộp
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: *id006
+                  merged: *id002
+        '400':
+          description: JSON hỏng
+          content:
+            application/json:
+              schema: *id003
+        '401':
+          description: Chưa đăng nhập
+          content:
+            application/json:
+              schema: *id003
+        '500':
+          description: Lỗi máy chủ (thông báo chung, không lộ chi tiết kỹ thuật)
+          content:
+            application/json:
+              schema: *id003
+  /api/orders:
+    post:
+      tags:
+      - Đơn hàng (khách)
+      summary: Đặt hàng
+      description: 'Tạo đơn hàng. **Có `items`** = "Mua ngay" các sản phẩm đó. **Không có `items`** = đặt toàn bộ
+        giỏ hàng (giỏ được dọn sau khi đặt). Giá và tồn kho luôn lấy từ database (không tin giá do trình duyệt gửi),
+        kho được trừ trong 1 giao dịch an toàn. Phí ship: 30.000đ, miễn phí khi tiền hàng trên 500.000đ. Đơn chuyển
+        khoản phải được nhân viên xác nhận đã nhận tiền mới xử lý.
+
+
+        **Quyền truy cập:** Cần đăng nhập (mọi vai trò)'
+      security:
+      - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                receiverName: *id001
+                phone:
+                  type: string
+                  description: Dạng 0901234567 hoặc +84901234567
+                shippingAddress:
+                  type: string
+                  description: Địa chỉ đầy đủ
+                note: *id001
+                paymentMethod:
+                  $ref: '#/components/schemas/PaymentMethod'
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      variantId: *id002
+                      quantity:
+                        type: integer
+                        minimum: 1
+                        maximum: 999
+                    required:
+                    - variantId
+                    - quantity
+                  description: 'CÓ: "Mua ngay" các sản phẩm này (không đụng giỏ hàng). KHÔNG CÓ: đặt toàn bộ giỏ
+                    hàng.'
+              required:
+              - receiverName
+              - phone
+              - shippingAddress
+              - paymentMethod
+            example:
+              receiverName: Nguyễn Văn A
+              phone: 0901234567
+              shippingAddress: 25 Nguyễn Trãi, Phường 3, Đà Lạt, Lâm Đồng
+              note: Giao giờ hành chính
+              paymentMethod: cod
+      responses:
+        '201':
+          description: Đã tạo đơn
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: *id006
+                  orderId: *id002
+                  totalAmount: *id002
+                  shippingFee: *id002
+        '400':
+          description: Thông tin giao hàng / sản phẩm không hợp lệ
+          content:
+            application/json:
+              schema: *id003
+        '401':
+          description: Chưa đăng nhập
+          content:
+            application/json:
+              schema: *id003
+        '409':
+          description: Hết hàng, không đủ tồn kho hoặc sản phẩm đã ngừng bán
+          content:
+            application/json:
+              schema: *id003
+        '500':
+          description: Lỗi máy chủ (thông báo chung, không lộ chi tiết kỹ thuật)
+          content:
+            application/json:
+              schema: *id003
+    get:
+      tags:
+      - Đơn hàng (khách)
+      summary: Danh sách đơn của tôi
+      description: 'Các đơn của người đang đăng nhập, mới nhất trước.
+
+
+        **Quyền truy cập:** Cần đăng nhập (mọi vai trò)'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          description: Danh sách đơn
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  orders:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: *id002
+                        status:
+                          $ref: '#/components/schemas/OrderStatus'
+                        totalAmount: *id002
+                        shippingFee: *id002
+                        receiverName: *id001
+                        paymentMethod:
+                          $ref: '#/components/schemas/PaymentMethod'
+                        paymentStatus:
+                          $ref: '#/components/schemas/PaymentStatus'
+                        createdAt: *id004
+                        items:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              productName: *id001
+                              variantName: *id001
+                              quantity: *id002
+                              imageUrl: *id001
+        '401':
+          description: Chưa đăng nhập
+          content:
+            application/json:
+              schema: *id003
+        '500':
+          description: Lỗi máy chủ (thông báo chung, không lộ chi tiết kỹ thuật)
+          content:
+            application/json:
+              schema: *id003
+  /api/orders/{id}:
+    get:
+      tags:
+      - Đơn hàng (khách)
+      summary: Chi tiết đơn của tôi
+      description: 'Chi tiết đơn. Đơn của người khác trả 404 (không tiết lộ đơn có tồn tại). Nhân viên/admin xem
+        được mọi đơn. Đơn chuyển khoản kèm thông tin chuyển tiền và mã QR VietQR.
+
+
+        **Quyền truy cập:** Cần đăng nhập (mọi vai trò)'
+      security:
+      - cookieAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: Mã đơn
+        schema: *id002
+      responses:
+        '200':
+          description: Chi tiết đơn
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  order:
+                    type: object
+                    properties:
+                      id: *id002
+                      status:
+                        $ref: '#/components/schemas/OrderStatus'
+                      receiverName: *id001
+                      phone: *id001
+                      shippingAddress: *id001
+                      note: *id001
+                      paymentMethod:
+                        $ref: '#/components/schemas/PaymentMethod'
+                      paymentStatus:
+                        $ref: '#/components/schemas/PaymentStatus'
+                      shippingFee: *id002
+                      subtotal: *id002
+                      totalAmount: *id002
+                      transfer:
+                        type: object
+                        description: Thông tin chuyển khoản + QR (chỉ có với đơn bank)
+                        nullable: true
+                      createdAt: *id004
+                      items:
+                        type: array
+                        items: &id009
+                          type: object
+                          properties:
+                            id: *id002
+                            productName: *id001
+                            variantName: *id001
+                            imageUrl: *id001
+                            quantity: *id002
+                            price: *id002
+        '401':
+          description: Chưa đăng nhập
+          content:
+            application/json:
+              schema: *id003
+        '404':
+          description: Không tìm thấy đơn
+          content:
+            application/json:
+              schema: *id003
+        '500':
+          description: Lỗi máy chủ (thông báo chung, không lộ chi tiết kỹ thuật)
+          content:
+            application/json:
+              schema: *id003
+  /api/orders/{id}/cancel:
+    post:
+      tags:
+      - Đơn hàng (khách)
+      summary: Hủy đơn
+      description: 'Khách tự hủy đơn **còn ở trạng thái chờ xác nhận**. Tồn kho được hoàn lại.
+
+
+        **Quyền truy cập:** Cần đăng nhập (mọi vai trò)'
+      security:
+      - cookieAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: Mã đơn
+        schema: *id002
+      responses:
+        '200':
+          description: Đã hủy
+          content:
+            application/json:
+              schema: *id007
+        '401':
+          description: Chưa đăng nhập
+          content:
+            application/json:
+              schema: *id003
+        '404':
+          description: Không tìm thấy đơn
+          content:
+            application/json:
+              schema: *id003
+        '409':
+          description: Đơn đã hủy trước đó hoặc đã được xử lý nên không thể hủy
+          content:
+            application/json:
+              schema: *id003
+        '500':
+          description: Lỗi máy chủ (thông báo chung, không lộ chi tiết kỹ thuật)
+          content:
+            application/json:
+              schema: *id003
+  /api/admin/stats:
+    get:
+      tags:
+      - 'Quản trị: thống kê'
+      summary: Thống kê tổng quan
+      description: 'Toàn bộ số liệu cho trang Tổng quan: chỉ số kinh doanh (kèm so sánh kỳ trước), chuỗi theo ngày/tháng,
+        cơ cấu trạng thái, thanh toán, danh mục, sản phẩm bán chạy, tồn kho, đơn mới nhất... `topCustomers` chỉ
+        có với admin (nhân viên nhận `null`). `365` gom theo tháng.
+
+
+        **Quyền truy cập:** Cần đăng nhập với vai trò **nhân viên** hoặc **admin**'
+      security:
+      - cookieAuth: []
+      parameters:
+      - name: range
+        in: query
+        required: false
+        description: Khoảng thời gian
+        schema:
+          type: string
+          enum:
+          - '7'
+          - '30'
+          - '90'
+          - '365'
+          default: '30'
+      responses:
+        '200':
+          description: Số liệu thống kê
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  viewer:
+                    type: object
+                    properties:
+                      role: *id001
+                      name: *id001
+                  generatedAt: *id004
+                  range:
+                    type: object
+                    properties:
+                      key: *id001
+                      unit:
+                        type: string
+                        enum:
+                        - day
+                        - month
+                      start: *id001
+                      end: *id001
+                      days: *id002
+                  today:
+                    type: object
+                    properties:
+                      orders: *id002
+                      gross: *id002
+                      yesterdayOrders: *id002
+                      yesterdayGross: *id002
+                  actions:
+                    type: object
+                    properties:
+                      pending: *id002
+                      pendingLate: *id002
+                      processing: *id002
+                      shipped: *id002
+                      waitingPayment: *id002
+                      outOfStock: *id002
+                      lowStock: *id002
+                  totals:
+                    type: object
+                    properties:
+                      current:
+                        type: object
+                        properties:
+                          orders: *id002
+                          valid: *id002
+                          cancelled: *id002
+                          gross: *id002
+                          revenue: *id002
+                          aov: *id002
+                          newCustomers: *id002
+                      previous:
+                        type: object
+                        properties:
+                          orders: *id002
+                          valid: *id002
+                          cancelled: *id002
+                          gross: *id002
+                          revenue: *id002
+                          aov: *id002
+                          newCustomers: *id002
+                  series:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key: *id001
+                        orders: *id002
+                        valid: *id002
+                        cancelled: *id002
+                        gross: *id002
+                        revenue: *id002
+                        aov: *id002
+                        customers: *id002
+                  statusBreakdown:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        status: *id001
+                        count: *id002
+                        value: *id002
+                  paymentBreakdown:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        method: *id001
+                        count: *id002
+                        value: *id002
+                  categories:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: *id002
+                        name: *id001
+                        value: *id002
+                        qty: *id002
+                  topProducts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: *id002
+                        name: *id001
+                        imageUrl: *id001
+                        qty: *id002
+                        value: *id002
+                  weekdays:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        day: *id002
+                        orders: *id002
+                  topCustomers:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: *id002
+                        name: *id001
+                        email: *id001
+                        orders: *id002
+                        spent: *id002
+                    nullable: true
+                  lowStockLimit: *id002
+                  lowStock:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        productId: *id002
+                        name: *id001
+                        variantName: *id001
+                        stock: *id002
+                  recentOrders:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: *id002
+                        status: *id001
+                        totalAmount: *id002
+                        receiverName: *id001
+                        createdAt: *id004
+                        paymentMethod: *id001
+                        paymentStatus: *id001
+                        itemCount: *id002
+                  products:
+                    type: object
+                    properties:
+                      active: *id002
+                      hidden: *id002
+                  lifetimeRevenue: *id002
+        '401':
+          description: Chưa đăng nhập
+          content:
+            application/json:
+              schema: *id003
+        '403':
+          description: Không đủ quyền
+          content:
+            application/json:
+              schema: *id003
+        '500':
+          description: Lỗi máy chủ (thông báo chung, không lộ chi tiết kỹ thuật)
+          content:
+            application/json:
+              schema: *id003
+  /api/admin/orders:
+    get:
+      tags:
+      - 'Quản trị: đơn hàng'
+      summary: Danh sách đơn hàng
+      description: 'Danh sách đơn có lọc, tìm kiếm và phân trang. `counts` là số đơn từng trạng thái (cho các tab).
+
+
+        **Quyền truy cập:** Cần đăng nhập với vai trò **nhân viên** hoặc **admin**'
+      security:
+      - cookieAuth: []
+      parameters:
+      - name: status
+        in: query
+        required: false
+        description: Lọc trạng thái
+        schema:
+          type: string
+          enum:
+          - all
+          - pending
+          - processing
+          - shipped
+          - delivered
+          - cancelled
+          default: all
+      - name: payment
+        in: query
+        required: false
+        description: Lọc thanh toán
+        schema:
+          type: string
+          enum:
+          - all
+          - paid
+          - unpaid
+          default: all
+      - name: q
+        in: query
+        required: false
+        description: Tìm theo mã đơn (DS-000042 / 42), tên, số điện thoại hoặc email
+        schema: *id001
+      - name: page
+        in: query
+        required: false
+        description: Trang (15 đơn / trang)
+        schema:
+          type: integer
+          default: 1
+      responses:
+        '200':
+          description: Danh sách đơn
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  orders:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: *id002
+                        status: *id001
+                        paymentMethod: *id001
+                        paymentStatus: *id001
+                        totalAmount: *id002
+                        receiverName: *id001
+                        phone: *id001
+                        customerEmail: *id001
+                        itemCount: *id002
+                        createdAt: *id004
+                  counts:
+                    type: object
+                    properties:
+                      all: *id002
+                      pending: *id002
+                      processing: *id002
+                      shipped: *id002
+                      delivered: *id002
+                      cancelled: *id002
+                  total: *id002
+                  page: *id002
+                  pageSize: *id002
+                  totalPages: *id002
+        '401':
+          description: Chưa đăng nhập
+          content:
+            application/json:
+              schema: *id003
+        '403':
+          description: Không đủ quyền
+          content:
+            application/json:
+              schema: *id003
+        '500':
+          description: Lỗi máy chủ (thông báo chung, không lộ chi tiết kỹ thuật)
+          content:
+            application/json:
+              schema: *id003
+  /api/admin/orders/{id}:
+    get:
+      tags:
+      - 'Quản trị: đơn hàng'
+      summary: Chi tiết đơn (quản trị)
+      description: 'Chi tiết đơn kèm thông tin khách hàng và nhật ký xử lý (ai đổi gì, lúc nào).
+
+
+        **Quyền truy cập:** Cần đăng nhập với vai trò **nhân viên** hoặc **admin**'
+      security:
+      - cookieAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: Mã đơn
+        schema: *id002
+      responses:
+        '200':
+          description: Chi tiết đơn
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  order:
+                    type: object
+                    properties:
+                      id: *id002
+                      status: *id001
+                      receiverName: *id001
+                      phone: *id001
+                      shippingAddress: *id001
+                      note: *id001
+                      paymentMethod: *id001
+                      paymentStatus: *id001
+                      shippingFee: *id002
+                      subtotal: *id002
+                      totalAmount: *id002
+                      createdAt: *id004
+                      customer:
+                        type: object
+                        properties:
+                          name: *id001
+                          email: *id001
+                      items:
+                        type: array
+                        items: *id009
+                      events:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id: *id002
+                            event: *id001
+                            from: *id001
+                            to: *id001
+                            by: *id001
+                            createdAt: *id004
+        '401':
+          description: Chưa đăng nhập
+          content:
+            application/json:
+              schema: *id003
+        '403':
+          description: Không đủ quyền
+          content:
+            application/json:
+              schema: *id003
+        '404':
+          description: Không tìm thấy đơn
+          content:
+            application/json:
+              schema: *id003
+        '500':
+          description: Lỗi máy chủ (thông báo chung, không lộ chi tiết kỹ thuật)
+          content:
+            application/json:
+              schema: *id003
+  /api/admin/orders/{{bankOrderId}}:
+    patch:
+      tags:
+      - 'Quản trị: đơn hàng'
+      summary: 'Cập nhật đơn: xác nhận đã nhận tiền'
+      description: 'Cập nhật đơn: gửi **`markPaid: true`** để xác nhận đã nhận tiền (đơn chuyển khoản), hoặc gửi
+        **`status`** để chuyển trạng thái. Luồng hợp lệ: `pending → processing → shipped → delivered` (hủy được
+        khi còn pending/processing). Mọi thay đổi đều được ghi nhật ký. Đơn COD giao xong tự chuyển thành đã thanh
+        toán.
+
+
+        **Quyền truy cập:** Cần đăng nhập với vai trò **nhân viên** hoặc **admin**'
+      security:
+      - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                markPaid:
+                  type: boolean
+                  description: Xác nhận đã nhận tiền
+                status:
+                  $ref: '#/components/schemas/OrderStatus'
+            example:
+              markPaid: true
+      responses:
+        '200':
+          description: Đã cập nhật
+          content:
+            application/json:
+              schema: *id007
+        '400':
+          description: Dữ liệu không hợp lệ
+          content:
+            application/json:
+              schema: *id003
+        '401':
+          description: Chưa đăng nhập
+          content:
+            application/json:
+              schema: *id003
+        '403':
+          description: Không đủ quyền
+          content:
+            application/json:
+              schema: *id003
+        '404':
+          description: Không tìm thấy đơn
+          content:
+            application/json:
+              schema: *id003
+        '409':
+          description: Chuyển trạng thái không hợp lệ / chưa nhận tiền
+          content:
+            application/json:
+              schema: *id003
+        '500':
+          description: Lỗi máy chủ (thông báo chung, không lộ chi tiết kỹ thuật)
+          content:
+            application/json:
+              schema: *id003
+  /api/admin/products:
+    get:
+      tags:
+      - 'Quản trị: sản phẩm'
+      summary: Danh sách sản phẩm (quản trị)
+      description: 'Mọi sản phẩm (cả đang ẩn) kèm cảnh báo tồn kho thấp và danh sách danh mục.
+
+
+        **Quyền truy cập:** Cần đăng nhập với vai trò **nhân viên** hoặc **admin**'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          description: Danh sách
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  products:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: *id002
+                        name: *id001
+                        region: *id001
+                        imageUrl: *id001
+                        isActive: *id006
+                        categoryId: *id002
+                        category: *id001
+                        variants:
+                          type: array
+                          items: &id010
+                            type: object
+                            properties:
+                              id: *id002
+                              name: *id001
+                              price: *id002
+                              stock: *id002
+                        minPrice: *id002
+                        totalStock: *id002
+                        lowStock: *id006
+                  categories:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: *id002
+                        name: *id001
+        '401':
+          description: Chưa đăng nhập
+          content:
+            application/json:
+              schema: *id003
+        '403':
+          description: Không đủ quyền
+          content:
+            application/json:
+              schema: *id003
+        '500':
+          description: Lỗi máy chủ (thông báo chung, không lộ chi tiết kỹ thuật)
+          content:
+            application/json:
+              schema: *id003
+    post:
+      tags:
+      - 'Quản trị: sản phẩm'
+      summary: Tạo sản phẩm
+      description: 'Tạo sản phẩm cùng các quy cách (1–20 quy cách, tên không trùng).
+
+
+        **Quyền truy cập:** Cần đăng nhập với vai trò **nhân viên** hoặc **admin**'
+      security:
+      - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: &id011
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: 2–255 ký tự
+                categoryId: *id002
+                description:
+                  type: string
+                  description: Tối đa 2000 ký tự
+                region:
+                  type: string
+                  description: Tối đa 150 ký tự
+                imageUrl:
+                  type: string
+                  description: Dạng /images/products/ten-anh.jpg (lấy từ API upload)
+                isActive: *id006
+                variants:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        description: Có id = sửa quy cách cũ; bỏ trống = thêm mới
+                      name: *id001
+                      price: *id002
+                      stock: *id002
+                    required:
+                    - name
+                    - price
+                    - stock
+                  minItems: 1
+                  maxItems: 20
+              required:
+              - name
+              - categoryId
+              - variants
+            example:
+              name: Cà phê thử nghiệm
+              categoryId: 1
+              description: Mô tả sản phẩm
+              region: Đà Lạt
+              imageUrl: ''
+              isActive: true
+              variants:
+              - name: 250g
+                price: 120000
+                stock: 50
+      responses:
+        '201':
+          description: Đã tạo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: *id006
+                  id: *id002
+        '400':
+          description: Dữ liệu sản phẩm không hợp lệ
+          content:
+            application/json:
+              schema: *id003
+        '401':
+          description: Chưa đăng nhập
+          content:
+            application/json:
+              schema: *id003
+        '403':
+          description: Không đủ quyền
+          content:
+            application/json:
+              schema: *id003
+        '500':
+          description: Lỗi máy chủ (thông báo chung, không lộ chi tiết kỹ thuật)
+          content:
+            application/json:
+              schema: *id003
+  /api/admin/products/{id}:
+    get:
+      tags:
+      - 'Quản trị: sản phẩm'
+      summary: Chi tiết sản phẩm (quản trị)
+      description: 'Chi tiết một sản phẩm để đổ vào form sửa.
+
+
+        **Quyền truy cập:** Cần đăng nhập với vai trò **nhân viên** hoặc **admin**'
+      security:
+      - cookieAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: Mã sản phẩm
+        schema: *id002
+      responses:
+        '200':
+          description: Chi tiết
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  product:
+                    type: object
+                    properties:
+                      id: *id002
+                      name: *id001
+                      categoryId: *id002
+                      description: *id001
+                      region: *id001
+                      imageUrl: *id001
+                      isActive: *id006
+                      variants:
+                        type: array
+                        items: *id010
+        '401':
+          description: Chưa đăng nhập
+          content:
+            application/json:
+              schema: *id003
+        '403':
+          description: Không đủ quyền
+          content:
+            application/json:
+              schema: *id003
+        '404':
+          description: Không tìm thấy
+          content:
+            application/json:
+              schema: *id003
+        '500':
+          description: Lỗi máy chủ (thông báo chung, không lộ chi tiết kỹ thuật)
+          content:
+            application/json:
+              schema: *id003
+    put:
+      tags:
+      - 'Quản trị: sản phẩm'
+      summary: Sửa sản phẩm
+      description: 'Sửa toàn bộ sản phẩm. Quy cách có `id` = sửa; không có `id` = thêm mới; quy cách cũ không còn
+        trong danh sách sẽ bị xóa (nếu chưa có đơn).
+
+
+        **Quyền truy cập:** Cần đăng nhập với vai trò **nhân viên** hoặc **admin**'
+      security:
+      - cookieAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: Mã sản phẩm
+        schema: *id002
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: *id011
+            example:
+              name: Cà phê thử nghiệm (đã sửa)
+              categoryId: 1
+              description: ''
+              region: Đà Lạt
+              imageUrl: ''
+              isActive: true
+              variants:
+              - id: 1
+                name: 250g
+                price: 125000
+                stock: 40
+      responses:
+        '200':
+          description: Đã lưu
+          content:
+            application/json:
+              schema: *id007
+        '400':
+          description: Dữ liệu không hợp lệ
+          content:
+            application/json:
+              schema: *id003
+        '401':
+          description: Chưa đăng nhập
+          content:
+            application/json:
+              schema: *id003
+        '403':
+          description: Không đủ quyền
+          content:
+            application/json:
+              schema: *id003
+        '404':
+          description: Không tìm thấy
+          content:
+            application/json:
+              schema: *id003
+        '409':
+          description: Quy cách đã có đơn nên không thể xóa
+          content:
+            application/json:
+              schema: *id003
+        '500':
+          description: Lỗi máy chủ (thông báo chung, không lộ chi tiết kỹ thuật)
+          content:
+            application/json:
+              schema: *id003
+    patch:
+      tags:
+      - 'Quản trị: sản phẩm'
+      summary: Ẩn / hiện sản phẩm
+      description: 'Bật/tắt bán sản phẩm (sản phẩm ẩn không hiện ở cửa hàng).
+
+
+        **Quyền truy cập:** Cần đăng nhập với vai trò **nhân viên** hoặc **admin**'
+      security:
+      - cookieAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: Mã sản phẩm
+        schema: *id002
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                isActive: *id006
+              required:
+              - isActive
+            example:
+              isActive: false
+      responses:
+        '200':
+          description: Đã cập nhật
+          content:
+            application/json:
+              schema: *id007
+        '400':
+          description: Dữ liệu không hợp lệ
+          content:
+            application/json:
+              schema: *id003
+        '401':
+          description: Chưa đăng nhập
+          content:
+            application/json:
+              schema: *id003
+        '403':
+          description: Không đủ quyền
+          content:
+            application/json:
+              schema: *id003
+        '404':
+          description: Không tìm thấy
+          content:
+            application/json:
+              schema: *id003
+        '500':
+          description: Lỗi máy chủ (thông báo chung, không lộ chi tiết kỹ thuật)
+          content:
+            application/json:
+              schema: *id003
+    delete:
+      tags:
+      - 'Quản trị: sản phẩm'
+      summary: Xóa sản phẩm
+      description: 'Chỉ **admin**. Sản phẩm đã có đơn hàng thì KHÔNG xóa được (mã 409), hãy chuyển sang trạng thái
+        ẩn.
+
+
+        **Quyền truy cập:** Chỉ **admin**'
+      security:
+      - cookieAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: Mã sản phẩm
+        schema: *id002
+      responses:
+        '200':
+          description: Đã xóa
+          content:
+            application/json:
+              schema: *id007
+        '401':
+          description: Chưa đăng nhập
+          content:
+            application/json:
+              schema: *id003
+        '403':
+          description: Không đủ quyền
+          content:
+            application/json:
+              schema: *id003
+        '404':
+          description: Không tìm thấy
+          content:
+            application/json:
+              schema: *id003
+        '409':
+          description: Sản phẩm đã có đơn hàng nên không thể xóa
+          content:
+            application/json:
+              schema: *id003
+        '500':
+          description: Lỗi máy chủ (thông báo chung, không lộ chi tiết kỹ thuật)
+          content:
+            application/json:
+              schema: *id003
+  /api/admin/stories:
+    get:
+      tags:
+      - 'Quản trị: câu chuyện'
+      summary: Danh sách câu chuyện (quản trị)
+      description: 'Mọi bài viết, gồm cả bản nháp.
+
+
+        **Quyền truy cập:** Cần đăng nhập với vai trò **nhân viên** hoặc **admin**'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          description: Danh sách
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  stories:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: *id002
+                        slug: *id001
+                        title: *id001
+                        region: *id001
+                        coverUrl: *id001
+                        isPublished: *id006
+                        createdAt: *id004
+                        updatedAt: *id004
+        '401':
+          description: Chưa đăng nhập
+          content:
+            application/json:
+              schema: *id003
+        '403':
+          description: Không đủ quyền
+          content:
+            application/json:
+              schema: *id003
+        '500':
+          description: Lỗi máy chủ (thông báo chung, không lộ chi tiết kỹ thuật)
+          content:
+            application/json:
+              schema: *id003
+    post:
+      tags:
+      - 'Quản trị: câu chuyện'
+      summary: Tạo câu chuyện
+      description: 'Tạo bài viết. Đường dẫn (`slug`) được tự sinh từ tiêu đề.
+
+
+        **Quyền truy cập:** Cần đăng nhập với vai trò **nhân viên** hoặc **admin**'
+      security:
+      - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: &id012
+              type: object
+              properties:
+                title:
+                  type: string
+                  description: 3–200 ký tự
+                excerpt:
+                  type: string
+                  description: Tối đa 400 ký tự
+                region: *id001
+                coverUrl: *id001
+                content:
+                  type: string
+                  description: Tối đa 20.000 ký tự; bài đăng công khai cần ít nhất 50 ký tự
+                isPublished: *id006
+              required:
+              - title
+            example:
+              title: Hương vị Đà Lạt
+              excerpt: Tóm tắt ngắn
+              region: Đà Lạt
+              coverUrl: ''
+              content: Nội dung bài viết dài ít nhất năm mươi ký tự để được phép đăng công khai.
+              isPublished: true
+      responses:
+        '201':
+          description: Đã tạo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: *id006
+                  id: *id002
+                  slug: *id001
+        '400':
+          description: Dữ liệu không hợp lệ
+          content:
+            application/json:
+              schema: *id003
+        '401':
+          description: Chưa đăng nhập
+          content:
+            application/json:
+              schema: *id003
+        '403':
+          description: Không đủ quyền
+          content:
+            application/json:
+              schema: *id003
+        '409':
+          description: Trùng đường dẫn
+          content:
+            application/json:
+              schema: *id003
+        '500':
+          description: Lỗi máy chủ (thông báo chung, không lộ chi tiết kỹ thuật)
+          content:
+            application/json:
+              schema: *id003
+  /api/admin/stories/{id}:
+    get:
+      tags:
+      - 'Quản trị: câu chuyện'
+      summary: Chi tiết câu chuyện (quản trị)
+      description: 'Chi tiết bài viết (kể cả nháp) để sửa.
+
+
+        **Quyền truy cập:** Cần đăng nhập với vai trò **nhân viên** hoặc **admin**'
+      security:
+      - cookieAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: Mã bài viết
+        schema: *id002
+      responses:
+        '200':
+          description: Chi tiết
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  story:
+                    type: object
+                    properties:
+                      id: *id002
+                      slug: *id001
+                      title: *id001
+                      excerpt: *id001
+                      content: *id001
+                      region: *id001
+                      coverUrl: *id001
+                      isPublished: *id006
+        '401':
+          description: Chưa đăng nhập
+          content:
+            application/json:
+              schema: *id003
+        '403':
+          description: Không đủ quyền
+          content:
+            application/json:
+              schema: *id003
+        '404':
+          description: Không tìm thấy
+          content:
+            application/json:
+              schema: *id003
+        '500':
+          description: Lỗi máy chủ (thông báo chung, không lộ chi tiết kỹ thuật)
+          content:
+            application/json:
+              schema: *id003
+    put:
+      tags:
+      - 'Quản trị: câu chuyện'
+      summary: Sửa câu chuyện
+      description: 'Sửa bài viết.
+
+
+        **Quyền truy cập:** Cần đăng nhập với vai trò **nhân viên** hoặc **admin**'
+      security:
+      - cookieAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: Mã bài viết
+        schema: *id002
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: *id012
+            example:
+              title: Hương vị Đà Lạt (sửa)
+              content: Nội dung đã chỉnh sửa, dài hơn năm mươi ký tự để đăng công khai.
+              isPublished: true
+      responses:
+        '200':
+          description: Đã lưu
+          content:
+            application/json:
+              schema: *id007
+        '400':
+          description: Dữ liệu không hợp lệ
+          content:
+            application/json:
+              schema: *id003
+        '401':
+          description: Chưa đăng nhập
+          content:
+            application/json:
+              schema: *id003
+        '403':
+          description: Không đủ quyền
+          content:
+            application/json:
+              schema: *id003
+        '404':
+          description: Không tìm thấy
+          content:
+            application/json:
+              schema: *id003
+        '500':
+          description: Lỗi máy chủ (thông báo chung, không lộ chi tiết kỹ thuật)
+          content:
+            application/json:
+              schema: *id003
+    patch:
+      tags:
+      - 'Quản trị: câu chuyện'
+      summary: Đăng / gỡ bài
+      description: 'Đăng bài công khai hoặc chuyển về nháp.
+
+
+        **Quyền truy cập:** Cần đăng nhập với vai trò **nhân viên** hoặc **admin**'
+      security:
+      - cookieAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: Mã bài viết
+        schema: *id002
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                isPublished: *id006
+              required:
+              - isPublished
+            example:
+              isPublished: true
+      responses:
+        '200':
+          description: Đã cập nhật
+          content:
+            application/json:
+              schema: *id007
+        '400':
+          description: Bài đăng cần ít nhất 50 ký tự nội dung
+          content:
+            application/json:
+              schema: *id003
+        '401':
+          description: Chưa đăng nhập
+          content:
+            application/json:
+              schema: *id003
+        '403':
+          description: Không đủ quyền
+          content:
+            application/json:
+              schema: *id003
+        '404':
+          description: Không tìm thấy
+          content:
+            application/json:
+              schema: *id003
+    delete:
+      tags:
+      - 'Quản trị: câu chuyện'
+      summary: Xóa câu chuyện
+      description: 'Chỉ **admin**.
+
+
+        **Quyền truy cập:** Chỉ **admin**'
+      security:
+      - cookieAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: Mã bài viết
+        schema: *id002
+      responses:
+        '200':
+          description: Đã xóa
+          content:
+            application/json:
+              schema: *id007
+        '401':
+          description: Chưa đăng nhập
+          content:
+            application/json:
+              schema: *id003
+        '403':
+          description: Không đủ quyền
+          content:
+            application/json:
+              schema: *id003
+        '404':
+          description: Không tìm thấy
+          content:
+            application/json:
+              schema: *id003
+  /api/admin/upload:
+    post:
+      tags:
+      - 'Quản trị: tải ảnh'
+      summary: Tải ảnh lên
+      description: 'Tải ảnh JPG/PNG/WEBP (tối đa 3MB) lên thư mục `public/images/...`. Loại ảnh được nhận diện bằng
+        nội dung file, không tin đuôi file. Dùng `form-data` với khóa `file`. Trả về đường dẫn để gán vào `imageUrl`
+        / `coverUrl`.
+
+
+        **Quyền truy cập:** Cần đăng nhập với vai trò **nhân viên** hoặc **admin**'
+      security:
+      - cookieAuth: []
+      parameters:
+      - name: folder
+        in: query
+        required: false
+        description: Thư mục lưu ảnh
+        schema:
+          type: string
+          enum:
+          - products
+          - stories
+          default: products
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+              - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Đã tải lên
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: *id006
+                  url: *id001
+        '400':
+          description: Chưa chọn ảnh / không phải JPG, PNG, WEBP
+          content:
+            application/json:
+              schema: *id003
+        '401':
+          description: Chưa đăng nhập
+          content:
+            application/json:
+              schema: *id003
+        '403':
+          description: Không đủ quyền
+          content:
+            application/json:
+              schema: *id003
+        '413':
+          description: Ảnh quá lớn (tối đa 3MB)
+          content:
+            application/json:
+              schema: *id003
+  /api/admin/users:
+    get:
+      tags:
+      - 'Quản trị: tài khoản'
+      summary: Danh sách tài khoản
+      description: 'Chỉ **admin**. Kèm số đơn của từng tài khoản và thời điểm hết khóa (nếu đang bị khóa).
+
+
+        **Quyền truy cập:** Chỉ **admin**'
+      security:
+      - cookieAuth: []
+      parameters:
+      - name: q
+        in: query
+        required: false
+        description: Tìm theo tên hoặc email
+        schema: *id001
+      - name: role
+        in: query
+        required: false
+        description: Lọc theo vai trò
+        schema:
+          type: string
+          enum:
+          - admin
+          - staff
+          - customer
+      responses:
+        '200':
+          description: Danh sách tài khoản
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: *id002
+                        fullName: *id001
+                        email: *id001
+                        role:
+                          $ref: '#/components/schemas/Role'
+                        emailVerified: *id006
+                        lockedUntil:
+                          type: string
+                          format: date-time
+                          nullable: true
+                        orderCount: *id002
+                        createdAt: *id004
+                  counts:
+                    type: object
+                    properties:
+                      admin: *id002
+                      staff: *id002
+                      customer: *id002
+                  currentUserId: *id002
+        '401':
+          description: Chưa đăng nhập
+          content:
+            application/json:
+              schema: *id003
+        '403':
+          description: Không đủ quyền
+          content:
+            application/json:
+              schema: *id003
+        '500':
+          description: Lỗi máy chủ (thông báo chung, không lộ chi tiết kỹ thuật)
+          content:
+            application/json:
+              schema: *id003
+  /api/admin/users/{id}:
+    patch:
+      tags:
+      - 'Quản trị: tài khoản'
+      summary: Mở khóa tài khoản
+      description: 'Chỉ **admin**: đổi vai trò (`role`) hoặc mở khóa (`unlock: true`). Không thể tự đổi quyền của
+        chính mình.
+
+
+        **Quyền truy cập:** Chỉ **admin**'
+      security:
+      - cookieAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: Mã tài khoản
+        schema: *id002
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                role:
+                  $ref: '#/components/schemas/Role'
+                unlock:
+                  type: boolean
+                  description: Mở khóa tài khoản đang bị khóa do sai mật khẩu
+            example:
+              role: staff
+      responses:
+        '200':
+          description: Đã cập nhật
+          content:
+            application/json:
+              schema: *id007
+        '400':
+          description: Dữ liệu không hợp lệ
+          content:
+            application/json:
+              schema: *id003
+        '401':
+          description: Chưa đăng nhập
+          content:
+            application/json:
+              schema: *id003
+        '403':
+          description: Không đủ quyền
+          content:
+            application/json:
+              schema: *id003
+        '404':
+          description: Không tìm thấy tài khoản
+          content:
+            application/json:
+              schema: *id003
+        '409':
+          description: Tự đổi quyền chính mình / đã có vai trò đó
+          content:
+            application/json:
+              schema: *id003
+        '500':
+          description: Lỗi máy chủ (thông báo chung, không lộ chi tiết kỹ thuật)
+          content:
+            application/json:
+              schema: *id003
+  /api/auth/logout:
+    post:
+      tags:
+      - Xác thực
+      summary: Đăng xuất
+      description: 'Xóa cookie đăng nhập.
+
+
+        **Quyền truy cập:** Công khai'
+      responses:
+        '200':
+          description: Đã đăng xuất
+          content:
+            application/json:
+              schema: *id007
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: session_token
+      description: Cookie do POST /api/auth/login đặt.
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Chưa đăng nhập.
+      required:
+      - error
+    Role:
+      type: string
+      enum:
+      - customer
+      - staff
+      - admin
+    OrderStatus:
+      type: string
+      enum:
+      - pending
+      - processing
+      - shipped
+      - delivered
+      - cancelled
+      description: Chờ xác nhận, Đang xử lý, Đang giao, Đã giao, Đã hủy
+    PaymentMethod:
+      type: string
+      enum:
+      - cod
+      - bank
+      description: cod = thanh toán khi nhận hàng; bank = chuyển khoản
+    PaymentStatus:
+      type: string
+      enum:
+      - unpaid
+      - paid

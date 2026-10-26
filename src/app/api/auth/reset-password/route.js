@@ -2,14 +2,15 @@ import { pool } from '@/lib/db';
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 
+import { HttpError, readJson, withApi } from '@/lib/apiHandler';
 const MAX_OTP_ATTEMPTS = 5; // Nhập sai OTP quá 5 lần thì mã bị hủy
 
 // Bước 2 của "Quên mật khẩu": kiểm tra OTP rồi đặt mật khẩu mới
-export async function POST(request) {
+async function handlePOST(request) {
   try {
-    const { email, otp, password } = await request.json();
+    const { email, otp, password } = await readJson(request);
 
-    if (!email || !otp || !password) {
+    if (typeof email !== 'string' || typeof password !== 'string' || !email.trim() || !otp || !password) {
       return NextResponse.json({ error: 'Thiếu thông tin đặt lại mật khẩu.' }, { status: 400 });
     }
     if (!/^\d{6}$/.test(String(otp))) {
@@ -20,6 +21,9 @@ export async function POST(request) {
         { error: 'Mật khẩu cần tối thiểu 6 ký tự.' },
         { status: 400 }
       );
+    }
+    if (password.length > 72) {
+      return NextResponse.json({ error: 'Mật khẩu tối đa 72 ký tự.' }, { status: 400 });
     }
 
     const [rows] = await pool.query(
@@ -78,7 +82,11 @@ export async function POST(request) {
 
     return NextResponse.json({ ok: true });
   } catch (error) {
+    if (error instanceof HttpError) throw error; // lỗi có chủ đích: để withApi trả đúng thông báo
     console.error('reset-password error:', error);
     return NextResponse.json({ error: 'Có lỗi xảy ra, thử lại sau.' }, { status: 500 });
   }
 }
+
+// Bọc từng handler để lỗi bất ngờ (mất kết nối database...) luôn trả về JSON thân thiện, không làm sập API
+export const POST = withApi(handlePOST);

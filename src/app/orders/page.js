@@ -13,6 +13,7 @@ import {
   formatPrice,
 } from "@/lib/orderUtils";
 
+import { friendlyError } from "@/lib/friendlyError";
 function ArrowRight({ className = "h-4 w-4" }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -71,7 +72,7 @@ export default function OrdersPage() {
 
         if (!cancelled) setOrders(Array.isArray(data.orders) ? data.orders : []);
       } catch (err) {
-        if (!cancelled) setError(err.message);
+        if (!cancelled) setError(friendlyError(err));
       } finally {
         if (!cancelled) setLoading(false);
       }

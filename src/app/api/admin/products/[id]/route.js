@@ -3,6 +3,7 @@ import { requireStaff } from '@/lib/adminAuth';
 import { validateProductInput } from '@/lib/productRules';
 import { NextResponse } from 'next/server';
 
+import { withApi } from '@/lib/apiHandler';
 class AdminError extends Error {
   constructor(message, status = 400) {
     super(message);
@@ -18,7 +19,7 @@ function parseId(value) {
 const notFound = () => NextResponse.json({ error: 'Không tìm thấy sản phẩm.' }, { status: 404 });
 
 // Lấy 1 sản phẩm để sửa
-export async function GET(request, { params }) {
+async function handleGET(request, { params }) {
   const guard = await requireStaff();
   if (guard.response) return guard.response;
 
@@ -54,7 +55,7 @@ export async function GET(request, { params }) {
 }
 
 // Cập nhật sản phẩm và đồng bộ danh sách quy cách
-export async function PUT(request, { params }) {
+async function handlePUT(request, { params }) {
   const guard = await requireStaff();
   if (guard.response) return guard.response;
 
@@ -171,7 +172,7 @@ export async function PUT(request, { params }) {
 }
 
 // Ẩn / hiện nhanh sản phẩm: { isActive: false }
-export async function PATCH(request, { params }) {
+async function handlePATCH(request, { params }) {
   const guard = await requireStaff();
   if (guard.response) return guard.response;
 
@@ -198,7 +199,7 @@ export async function PATCH(request, { params }) {
 }
 
 // Xóa hẳn sản phẩm: CHỈ ADMIN, và chỉ khi chưa từng có đơn hàng. Đã có đơn thì chỉ ẩn.
-export async function DELETE(request, { params }) {
+async function handleDELETE(request, { params }) {
   const guard = await requireStaff({ adminOnly: true });
   if (guard.response) return guard.response;
 
@@ -225,3 +226,9 @@ export async function DELETE(request, { params }) {
 
   return NextResponse.json({ ok: true });
 }
+
+// Bọc từng handler để lỗi bất ngờ (mất kết nối database...) luôn trả về JSON thân thiện, không làm sập API
+export const GET = withApi(handleGET);
+export const PUT = withApi(handlePUT);
+export const PATCH = withApi(handlePATCH);
+export const DELETE = withApi(handleDELETE);

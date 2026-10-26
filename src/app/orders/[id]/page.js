@@ -17,6 +17,7 @@ import {
   formatPrice,
 } from "@/lib/orderUtils";
 
+import { friendlyError } from "@/lib/friendlyError";
 /* =========================================================
    BIỂU TƯỢNG
 ========================================================= */
@@ -418,7 +419,7 @@ function OrderDetailContent() {
 
       setOrder(data.order);
     } catch (err) {
-      setError(err.message);
+      setError(friendlyError(err));
     } finally {
       setLoading(false);
     }
@@ -444,7 +445,7 @@ function OrderDetailContent() {
       setCancelOpen(false);
       await load();
     } catch (err) {
-      setCancelError(err.message);
+      setCancelError(friendlyError(err));
     } finally {
       setCancelling(false);
     }

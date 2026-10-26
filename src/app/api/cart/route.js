@@ -1,14 +1,40 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
+import { HttpError, readJson, toPositiveInt, withApi } from '@/lib/apiHandler';
 import { NextResponse } from 'next/server';
 
-// Xem giỏ hàng của người đang đăng nhập
-export async function GET() {
+// Số lượng tối đa của 1 quy cách trong giỏ (khớp với giới hạn khi đặt hàng)
+const MAX_QUANTITY = 999;
+
+async function requireUser() {
   const user = await getCurrentUser();
 
   if (!user) {
-    return NextResponse.json({ error: 'Chưa đăng nhập.' }, { status: 401 });
+    throw new HttpError('Chưa đăng nhập.', 401);
   }
+
+  return user;
+}
+
+// Kiểm tra mã quy cách + số lượng người dùng gửi lên. Sai thì ném lỗi 400 kèm thông báo rõ ràng.
+function parseVariantAndQuantity(body) {
+  const variantId = toPositiveInt(body.variantId);
+  const quantity = toPositiveInt(body.quantity, MAX_QUANTITY);
+
+  if (!variantId) {
+    throw new HttpError('Mã sản phẩm không hợp lệ.', 400);
+  }
+
+  if (!quantity) {
+    throw new HttpError(`Số lượng phải là số nguyên từ 1 đến ${MAX_QUANTITY}.`, 400);
+  }
+
+  return { variantId, quantity };
+}
+
+// Xem giỏ hàng của người đang đăng nhập
+async function handleGET() {
+  const user = await requireUser();
 
   const [rows] = await pool.query(
     `SELECT ci.id AS item_id, ci.quantity, ci.variant_id,
@@ -38,24 +64,31 @@ export async function GET() {
   return NextResponse.json({ items });
 }
 
-// Thêm sản phẩm vào giỏ (nếu đã có quy cách này trong giỏ thì cộng dồn số lượng)
-export async function POST(request) {
-  const user = await getCurrentUser();
+// Thêm sản phẩm vào giỏ (nếu đã có quy cách này trong giỏ thì cộng dồn số lượng, tối đa 999)
+async function handlePOST(request) {
+  const user = await requireUser();
+  const { variantId, quantity } = parseVariantAndQuantity(await readJson(request));
 
-  if (!user) {
-    return NextResponse.json({ error: 'Chưa đăng nhập.' }, { status: 401 });
+  const [[variant]] = await pool.query(
+    `SELECT pv.stock
+     FROM product_variants pv
+     JOIN products p ON p.id = pv.product_id
+     WHERE pv.id = ? AND p.is_active = 1`,
+    [variantId]
+  );
+
+  if (!variant) {
+    throw new HttpError('Sản phẩm không tồn tại hoặc đã ngừng bán.', 404);
   }
 
-  const { variantId, quantity } = await request.json();
-
-  if (!variantId || !quantity) {
-    return NextResponse.json({ error: 'Thiếu thông tin.' }, { status: 400 });
+  if (variant.stock < 1) {
+    throw new HttpError('Sản phẩm này đã hết hàng.', 409);
   }
 
   await pool.query(
     `INSERT INTO cart_items (user_id, variant_id, quantity)
      VALUES (?, ?, ?)
-     ON DUPLICATE KEY UPDATE quantity = quantity + VALUES(quantity)`,
+     ON DUPLICATE KEY UPDATE quantity = LEAST(quantity + VALUES(quantity), ${MAX_QUANTITY})`,
     [user.sub, variantId, quantity]
   );
 
@@ -63,37 +96,39 @@ export async function POST(request) {
 }
 
 // Đổi số lượng chính xác của 1 quy cách trong giỏ (dùng khi bấm nút +/- ở trang giỏ hàng)
-export async function PUT(request) {
-  const user = await getCurrentUser();
+async function handlePUT(request) {
+  const user = await requireUser();
+  const { variantId, quantity } = parseVariantAndQuantity(await readJson(request));
 
-  if (!user) {
-    return NextResponse.json({ error: 'Chưa đăng nhập.' }, { status: 401 });
+  const [result] = await pool.query(
+    'UPDATE cart_items SET quantity = ? WHERE user_id = ? AND variant_id = ?',
+    [quantity, user.sub, variantId]
+  );
+
+  if (result.affectedRows === 0) {
+    // Có thể số lượng gửi lên đúng bằng số lượng đang có (không đổi) nên kiểm tra thêm
+    const [[exists]] = await pool.query(
+      'SELECT 1 AS ok FROM cart_items WHERE user_id = ? AND variant_id = ?',
+      [user.sub, variantId]
+    );
+
+    if (!exists) {
+      throw new HttpError('Sản phẩm này không có trong giỏ hàng.', 404);
+    }
   }
-
-  const { variantId, quantity } = await request.json();
-
-  if (!variantId || !quantity) {
-    return NextResponse.json({ error: 'Thiếu thông tin.' }, { status: 400 });
-  }
-
-  await pool.query('UPDATE cart_items SET quantity = ? WHERE user_id = ? AND variant_id = ?', [
-    quantity,
-    user.sub,
-    variantId,
-  ]);
 
   return NextResponse.json({ ok: true });
 }
 
 // Xoá 1 sản phẩm khỏi giỏ
-export async function DELETE(request) {
-  const user = await getCurrentUser();
+async function handleDELETE(request) {
+  const user = await requireUser();
+  const body = await readJson(request);
+  const variantId = toPositiveInt(body.variantId);
 
-  if (!user) {
-    return NextResponse.json({ error: 'Chưa đăng nhập.' }, { status: 401 });
+  if (!variantId) {
+    throw new HttpError('Mã sản phẩm không hợp lệ.', 400);
   }
-
-  const { variantId } = await request.json();
 
   await pool.query('DELETE FROM cart_items WHERE user_id = ? AND variant_id = ?', [
     user.sub,
@@ -102,3 +137,9 @@ export async function DELETE(request) {
 
   return NextResponse.json({ ok: true });
 }
+
+// Bọc từng handler để lỗi bất ngờ (mất kết nối database...) luôn trả về JSON thân thiện, không làm sập API
+export const GET = withApi(handleGET);
+export const POST = withApi(handlePOST);
+export const PUT = withApi(handlePUT);
+export const DELETE = withApi(handleDELETE);

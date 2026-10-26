@@ -2,11 +2,12 @@ import { pool } from '@/lib/db';
 import { requireStaff } from '@/lib/adminAuth';
 import { NextResponse } from 'next/server';
 
+import { withApi } from '@/lib/apiHandler';
 const STATUSES = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
 const PAGE_SIZE = 15;
 
 // Danh sách đơn hàng cho quản trị: lọc theo trạng thái / thanh toán, tìm theo mã đơn, tên, SĐT, email
-export async function GET(request) {
+async function handleGET(request) {
   const guard = await requireStaff();
   if (guard.response) return guard.response;
 
@@ -93,3 +94,6 @@ export async function GET(request) {
     totalPages: Math.max(1, Math.ceil(total / PAGE_SIZE)),
   });
 }
+
+// Bọc từng handler để lỗi bất ngờ (mất kết nối database...) luôn trả về JSON thân thiện, không làm sập API
+export const GET = withApi(handleGET);

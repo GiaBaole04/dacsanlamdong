@@ -3,8 +3,9 @@ import { deriveExcerpt } from '@/lib/storyRules';
 import { readingMinutes } from '@/lib/storyFormat';
 import { NextResponse } from 'next/server';
 
+import { withApi } from '@/lib/apiHandler';
 // Danh sách câu chuyện ĐÃ ĐĂNG (công khai, ai cũng xem được). Bản nháp không bao giờ lộ ra ở đây.
-export async function GET() {
+async function handleGET() {
   const [rows] = await pool.query(
     `SELECT id, slug, title, excerpt, content, region, cover_url, created_at
      FROM stories
@@ -25,3 +26,6 @@ export async function GET() {
     })),
   });
 }
+
+// Bọc từng handler để lỗi bất ngờ (mất kết nối database...) luôn trả về JSON thân thiện, không làm sập API
+export const GET = withApi(handleGET);

@@ -14,6 +14,7 @@ import {
   validateShipping,
 } from "@/lib/orderUtils";
 
+import { friendlyError } from "@/lib/friendlyError";
 /* =========================
    ICONS
 ========================= */
@@ -245,7 +246,7 @@ function CheckoutContent() {
       window.dispatchEvent(new Event("cartUpdated"));
       router.push(`/orders/${data.orderId}?placed=1`);
     } catch (err) {
-      setServerError(err.message);
+      setServerError(friendlyError(err));
       setSubmitting(false);
     }
   }

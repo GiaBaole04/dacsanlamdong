@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AuthShell from "@/components/AuthShell";
 
+import { friendlyError } from "@/lib/friendlyError";
 /* =========================
    ICONS
 ========================= */
@@ -171,7 +172,7 @@ export default function RegisterPage() {
       setResendCooldown(60);
       setStep("otp");
     } catch (err) {
-      setError(err.message);
+      setError(friendlyError(err));
     } finally {
       setSubmitting(false);
     }
@@ -205,7 +206,7 @@ export default function RegisterPage() {
         router.push("/login");
       }, 1800);
     } catch (err) {
-      setError(err.message);
+      setError(friendlyError(err));
     } finally {
       setSubmitting(false);
     }
@@ -233,7 +234,7 @@ export default function RegisterPage() {
       setExpirySeconds(data.expiresInSeconds || 180);
       setResendCooldown(60);
     } catch (err) {
-      setError(err.message);
+      setError(friendlyError(err));
     } finally {
       setSubmitting(false);
     }

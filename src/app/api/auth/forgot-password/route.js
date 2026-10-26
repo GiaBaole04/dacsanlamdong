@@ -3,6 +3,7 @@ import { sendResetOtpEmail } from '@/lib/mailer';
 import { NextResponse } from 'next/server';
 import { randomInt } from 'crypto';
 
+import { HttpError, readJson, withApi } from '@/lib/apiHandler';
 const OTP_TTL_MS = 3 * 60 * 1000; // Mã OTP sống 3 phút
 const RESEND_COOLDOWN_MS = 60 * 1000; // Phải đợi 60 giây mới được gửi lại
 
@@ -12,11 +13,11 @@ function generateOtp() {
 
 // Bước 1 của "Quên mật khẩu": nhận email, gửi mã OTP nếu tài khoản tồn tại.
 // Luôn trả về ok dù email có tồn tại hay không, để không lộ email nào đã đăng ký.
-export async function POST(request) {
+async function handlePOST(request) {
   try {
-    const { email } = await request.json();
+    const { email } = await readJson(request);
 
-    if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
+    if (typeof email !== 'string' || email.length > 254 || !/^\S+@\S+\.\S+$/.test(email)) {
       return NextResponse.json({ error: 'Email không hợp lệ.' }, { status: 400 });
     }
 
@@ -55,7 +56,11 @@ export async function POST(request) {
 
     return okResponse();
   } catch (error) {
+    if (error instanceof HttpError) throw error; // lỗi có chủ đích: để withApi trả đúng thông báo
     console.error('forgot-password error:', error);
     return NextResponse.json({ error: 'Có lỗi xảy ra, thử lại sau.' }, { status: 500 });
   }
 }
+
+// Bọc từng handler để lỗi bất ngờ (mất kết nối database...) luôn trả về JSON thân thiện, không làm sập API
+export const POST = withApi(handlePOST);

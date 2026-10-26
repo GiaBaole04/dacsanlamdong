@@ -6,6 +6,7 @@ import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { formatPrice } from "@/lib/orderUtils";
 
+import { friendlyError } from "@/lib/friendlyError";
 // Bỏ dấu tiếng Việt để gõ "ca phe" vẫn tìm ra "Cà phê"
 function normalizeText(value = "") {
   return String(value)
@@ -40,7 +41,7 @@ export default function AdminProductsPage() {
       if (!res.ok) throw new Error(json.error || "Không tải được danh sách sản phẩm.");
       setData(json);
     } catch (err) {
-      setError(err.message);
+      setError(friendlyError(err));
     }
   }, []);
 
@@ -75,7 +76,7 @@ export default function AdminProductsPage() {
       if (!res.ok) throw new Error(json.error || "Không cập nhật được sản phẩm.");
       await load();
     } catch (err) {
-      setNotice(err.message);
+      setNotice(friendlyError(err));
     } finally {
       setToggling(null);
     }
@@ -94,7 +95,7 @@ export default function AdminProductsPage() {
       setDeleteTarget(null);
       await load();
     } catch (err) {
-      setDeleteError(err.message);
+      setDeleteError(friendlyError(err));
     } finally {
       setDeleting(false);
     }

@@ -4,6 +4,7 @@ import { calcShippingFee, validateShipping } from '@/lib/orderUtils';
 import { sendOrderConfirmationEmail } from '@/lib/mailer';
 import { NextResponse } from 'next/server';
 
+import { withApi } from '@/lib/apiHandler';
 // Lỗi "có chủ đích" (giỏ trống, hết hàng...) để trả về cho người dùng đọc được
 class OrderError extends Error {
   constructor(message, status = 400) {
@@ -13,7 +14,7 @@ class OrderError extends Error {
 }
 
 // Danh sách đơn hàng của CHÍNH người đang đăng nhập
-export async function GET() {
+async function handleGET() {
   const user = await getCurrentUser();
 
   if (!user) {
@@ -71,7 +72,7 @@ export async function GET() {
 //  - "Mua ngay": trình duyệt gửi items = [{ variantId, quantity }], giỏ hàng được giữ nguyên.
 // Cả hai chế độ đều KHÔNG tin giá do trình duyệt gửi: giá, tên, tồn kho đều đọc từ database.
 // Kiểm tra kho, trừ kho, lưu đơn nằm trong 1 giao dịch: lỗi ở bước nào cũng hoàn tác toàn bộ.
-export async function POST(request) {
+async function handlePOST(request) {
   const user = await getCurrentUser();
 
   if (!user) {
@@ -316,3 +317,7 @@ export async function POST(request) {
     conn.release();
   }
 }
+
+// Bọc từng handler để lỗi bất ngờ (mất kết nối database...) luôn trả về JSON thân thiện, không làm sập API
+export const GET = withApi(handleGET);
+export const POST = withApi(handlePOST);

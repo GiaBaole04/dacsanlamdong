@@ -3,8 +3,9 @@ import { requireStaff } from '@/lib/adminAuth';
 import { validateProductInput } from '@/lib/productRules';
 import { NextResponse } from 'next/server';
 
+import { withApi } from '@/lib/apiHandler';
 // Danh sách TẤT CẢ sản phẩm (kể cả đang ẩn) kèm quy cách và danh mục
-export async function GET() {
+async function handleGET() {
   const guard = await requireStaff();
   if (guard.response) return guard.response;
 
@@ -51,7 +52,7 @@ export async function GET() {
 }
 
 // Thêm sản phẩm mới (kèm các quy cách)
-export async function POST(request) {
+async function handlePOST(request) {
   const guard = await requireStaff();
   if (guard.response) return guard.response;
 
@@ -114,3 +115,7 @@ export async function POST(request) {
     conn.release();
   }
 }
+
+// Bọc từng handler để lỗi bất ngờ (mất kết nối database...) luôn trả về JSON thân thiện, không làm sập API
+export const GET = withApi(handleGET);
+export const POST = withApi(handlePOST);

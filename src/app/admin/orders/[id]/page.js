@@ -14,6 +14,7 @@ import {
   formatPrice,
 } from "@/lib/orderUtils";
 
+import { friendlyError } from "@/lib/friendlyError";
 function describeEvent(event) {
   if (event.event === "payment") {
     return "Xác nhận đã nhận tiền";
@@ -53,7 +54,7 @@ export default function AdminOrderDetailPage() {
 
       setOrder(json.order);
     } catch (err) {
-      setError(err.message);
+      setError(friendlyError(err));
     } finally {
       setLoading(false);
     }
@@ -82,7 +83,7 @@ export default function AdminOrderDetailPage() {
       setAction(null);
       await load();
     } catch (err) {
-      setActionError(err.message);
+      setActionError(friendlyError(err));
     } finally {
       setBusy(false);
     }

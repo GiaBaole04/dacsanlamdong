@@ -1,6 +1,7 @@
 import { pool } from '@/lib/db';
 import { NextResponse } from 'next/server';
 
+import { withApi } from '@/lib/apiHandler';
 /**
  * GỢI Ý "KHÁCH MUA SẢN PHẨM NÀY CŨNG MUA" (luật kết hợp, association rule)
  *
@@ -16,7 +17,7 @@ import { NextResponse } from 'next/server';
 
 const LIMIT = 4;
 
-export async function GET(request, { params }) {
+async function handleGET(request, { params }) {
   try {
     const { id } = await params;
     const productId = Number(id);
@@ -72,3 +73,6 @@ export async function GET(request, { params }) {
     return NextResponse.json({ error: 'Lỗi server' }, { status: 500 });
   }
 }
+
+// Bọc từng handler để lỗi bất ngờ (mất kết nối database...) luôn trả về JSON thân thiện, không làm sập API
+export const GET = withApi(handleGET);

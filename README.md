@@ -36,7 +36,9 @@ Yêu cầu: Node.js 20.9 trở lên và MariaDB (hoặc MySQL).
    ```
    npm install
    ```
-2. Tạo cơ sở dữ liệu `dacsanlamdong` rồi nhập file SQL của đồ án (file SQL nộp kèm báo cáo, không đưa lên GitHub). File này tạo các bảng và dữ liệu mẫu.
+2. Tạo cơ sở dữ liệu `dacsanlamdong` rồi nhập file SQL của đồ án (`sqldoan-moi.sql`, nộp kèm báo cáo). File này tạo các bảng và dữ liệu mẫu. Sau đó chạy tiếp, theo thứ tự (cần MariaDB 10.3 trở lên):
+   - `database/migration-hardening.sql`: thêm ràng buộc CHECK (giá, tồn kho, số lượng không âm) và chỉ mục.
+   - `database/seed-demo-data.sql` (tùy chọn): thêm khoảng 400 đơn hàng và 30 khách trong 12 tháng gần nhất để trang Thống kê có biểu đồ khi demo. Chạy lại nhiều lần vẫn an toàn.
 3. Tạo file `.env` từ mẫu rồi điền giá trị thật:
    ```
    copy .env.example .env
@@ -52,6 +54,18 @@ Yêu cầu: Node.js 20.9 trở lên và MariaDB (hoặc MySQL).
    npm run build
    npm start
    ```
+
+## Tài liệu API
+Toàn bộ 40 thao tác của 27 endpoint được mô tả trong thư mục `docs/`:
+
+| File | Dùng để |
+|---|---|
+| `docs/openapi.yaml` | Tài liệu chuẩn OpenAPI 3 (Swagger). Mở bằng https://editor.swagger.io (File → Import file) để xem và thử API |
+| `docs/postman/DacSanLamDong.postman_collection.json` | Bộ request + kiểm thử tự động cho Postman (78 request, 200+ phép kiểm tra) |
+| `docs/postman/Local.postman_environment.json` | Biến môi trường cho Postman (địa chỉ server, tài khoản mẫu) |
+| `docs/HUONG-DAN-API-POSTMAN.md` | Hướng dẫn từng bước dùng Postman |
+
+Quy ước chung: xác thực bằng cookie `session_token` (cấp bởi `POST /api/auth/login`); ba vai trò `customer`, `staff`, `admin`; mọi lỗi đều là JSON `{ "error": "thông báo tiếng Việt" }` kèm mã HTTP phù hợp (400, 401, 403, 404, 409, 429, 500).
 
 ## Biến môi trường
 
@@ -77,8 +91,11 @@ src/
     admin/        Khu vực quản trị và nhân viên
   components/     Header, Footer, ChatWidget, tranh phong cảnh SVG, hiệu ứng
   hooks/          useAuth, useCart
-  lib/            Truy cập cơ sở dữ liệu, xác thực, gửi mail, quy tắc đơn hàng, thuật toán gợi ý, chatbot
+  lib/            Truy cập cơ sở dữ liệu, xác thực, gửi mail, quy tắc đơn hàng, thuật toán gợi ý, chatbot,
+                  apiHandler (bọc lỗi cho mọi API), friendlyError (thông báo lỗi thân thiện ở giao diện)
 public/           Ảnh sản phẩm và tài nguyên tĩnh
+database/         Nâng cấp ràng buộc CSDL và dữ liệu demo (chạy sau file SQL chính)
+docs/             Tài liệu API: OpenAPI (Swagger) và Postman collection
 ```
 
 ## Lưu ý và hạn chế

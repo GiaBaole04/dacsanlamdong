@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { formatPrice } from '@/lib/orderUtils';
 
+import { friendlyError } from '@/lib/friendlyError';
 // Các trang không hiện nút chat (quản trị, đăng nhập, đặt hàng)
 const HIDDEN_PREFIXES = ['/admin', '/login', '/register', '/forgot-password', '/checkout'];
 
@@ -192,7 +193,7 @@ export default function ChatWidget() {
       setMessages(next);
       persist(next);
     } catch (err) {
-      setError(err.message || 'Có lỗi xảy ra, bạn thử lại nhé.');
+      setError(friendlyError(err, 'Có lỗi xảy ra, bạn thử lại nhé.'));
     } finally {
       setLoading(false);
     }

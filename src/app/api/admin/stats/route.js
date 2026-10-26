@@ -2,6 +2,7 @@ import { pool } from '@/lib/db';
 import { requireStaff } from '@/lib/adminAuth';
 import { NextResponse } from 'next/server';
 
+import { withApi } from '@/lib/apiHandler';
 // Các khoảng thời gian cho phép (chỉ nhận đúng các giá trị này, không nhận số tùy ý từ trình duyệt).
 //  - unit "day"  : gom số liệu theo ngày
 //  - unit "month": gom số liệu theo tháng (12 tháng gần nhất)
@@ -61,7 +62,7 @@ function shapeAgg(row = {}) {
 }
 
 // Số liệu cho trang Tổng quan của quản trị (admin và nhân viên đều xem được)
-export async function GET(request) {
+async function handleGET(request) {
   const guard = await requireStaff();
   if (guard.response) return guard.response;
 
@@ -351,3 +352,6 @@ export async function GET(request) {
     return NextResponse.json({ error: 'Không tải được số liệu thống kê.' }, { status: 500 });
   }
 }
+
+// Bọc từng handler để lỗi bất ngờ (mất kết nối database...) luôn trả về JSON thân thiện, không làm sập API
+export const GET = withApi(handleGET);

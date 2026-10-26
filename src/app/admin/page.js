@@ -21,6 +21,7 @@ import {
   formatPercent,
 } from "@/components/admin/charts";
 
+import { friendlyError } from "@/lib/friendlyError";
 // ---------------------------------------------------------------------------
 // Cấu hình hiển thị
 // ---------------------------------------------------------------------------
@@ -216,7 +217,7 @@ export default function AdminDashboardPage() {
           setError("");
         }
       } catch (err) {
-        if (!cancelled) setError(err.message || "Không tải được số liệu.");
+        if (!cancelled) setError(friendlyError(err, "Không tải được số liệu."));
       } finally {
         if (!cancelled) setFetching(false);
       }

@@ -8,6 +8,7 @@ import StoryCard from "@/components/StoryCard";
 import { ContourPattern, LandscapeScene, RidgeDivider, ThemeIcon } from "@/components/Landscape";
 import { regionTheme } from "@/lib/storyFormat";
 
+import { friendlyError } from "@/lib/friendlyError";
 export default function StoriesPage() {
   const [stories, setStories] = useState(null);
   const [error, setError] = useState("");
@@ -23,7 +24,7 @@ export default function StoriesPage() {
         if (!res.ok) throw new Error(json.error || "Không tải được các câu chuyện.");
         if (!cancelled) setStories(json.stories);
       } catch (err) {
-        if (!cancelled) setError(err.message);
+        if (!cancelled) setError(friendlyError(err));
       }
     }
 

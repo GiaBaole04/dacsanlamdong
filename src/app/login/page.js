@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AuthShell from "@/components/AuthShell";
 
+import { friendlyError } from "@/lib/friendlyError";
 /* =========================
    ICONS
 ========================= */
@@ -125,7 +126,7 @@ export default function LoginPage() {
       router.refresh();
     } catch (err) {
       setNoticeType("error");
-      setNotice(err.message || "Có lỗi xảy ra, thử lại sau.");
+      setNotice(friendlyError(err, "Có lỗi xảy ra, thử lại sau."));
     } finally {
       setSubmitting(false);
     }
