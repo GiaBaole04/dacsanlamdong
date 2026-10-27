@@ -1,6 +1,8 @@
 # Đặc Sản Lâm Đồng
 
-Website giới thiệu và bán đặc sản của ba vùng đất Lâm Đồng, Đắk Nông và Bình Thuận, nay hợp nhất thành tỉnh Lâm Đồng (từ 01/07/2025). Đồ án tốt nghiệp, viết bằng JavaScript.
+**Đề tài:** Xây dựng website giới thiệu, quản lý và bán đặc sản Lâm Đồng tích hợp gợi ý sản phẩm và chatbot tư vấn sử dụng JavaScript và MariaDB.
+
+Website giới thiệu và bán đặc sản của ba vùng đất Lâm Đồng, Đắk Nông và Bình Thuận, nay hợp nhất thành tỉnh Lâm Đồng (từ 01/07/2025). Đồ án thực tập tốt nghiệp, viết bằng JavaScript.
 
 > Sinh viên thực hiện: Lê Huỳnh gia Bảo, K15THO0003, K15THO1
 

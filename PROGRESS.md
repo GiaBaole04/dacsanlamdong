@@ -2,10 +2,10 @@
 
 > Đọc file này TRƯỚC, rồi chỉ đọc những file liên quan trực tiếp đến yêu cầu. Không đọc cả repo.
 > Schema database KHÔNG nằm trên GitHub: người dùng gửi riêng trong chat. Cần tên bảng/cột mà chưa có thì HỎI, không đoán.
-> Phần admin và nhân viên (xem mục "Không được sửa") đang do AI khác làm, không chỉnh sửa.
+> Khu vực quản trị (admin, nhân viên) đã hoàn thành. Chỉ sửa khi người dùng yêu cầu rõ và luôn giữ nguyên việc kiểm tra quyền ở mọi API quản trị.
 
 ## Đề tài
-Website giới thiệu và bán đặc sản Lâm Đồng, tích hợp gợi ý sản phẩm thông minh. Ngôn ngữ: JavaScript.
+Đề tài: Xây dựng website giới thiệu, quản lý và bán đặc sản Lâm Đồng tích hợp gợi ý sản phẩm và chatbot tư vấn sử dụng JavaScript và MariaDB.
 Stack: Next.js (App Router), React, Tailwind CSS 4, MariaDB (thư viện mysql2). Cấu hình kết nối nằm trong `.env` (không có trên GitHub).
 Bối cảnh: từ 01/07/2025 ba tỉnh Lâm Đồng, Đắk Nông, Bình Thuận hợp nhất thành tỉnh Lâm Đồng. Giao diện lấy ý tưởng "ba vùng đất, một Lâm Đồng": cao nguyên, rừng đất đỏ, biển.
 
@@ -27,9 +27,10 @@ Bối cảnh: từ 01/07/2025 ba tỉnh Lâm Đồng, Đắk Nông, Bình Thuậ
 ## Việc tiếp theo (dự kiến)
 - Hoàn thiện báo cáo: giải thích thuật toán gợi ý, ghi rõ dữ liệu đơn hàng mẫu (nếu dùng để demo) là dữ liệu tự tạo.
 
+- Khu vực quản trị và nhân viên (`app/admin/**`, `app/api/admin/**`, `components/admin/**`, `lib/adminAuth.js`): trang tổng quan thống kê hoạt động bán hàng, quản lý đơn hàng (cập nhật trạng thái), sản phẩm (danh mục, các mức khối lượng, giá, tồn kho, tải ảnh lên), câu chuyện, và tài khoản người dùng. Phân quyền: nhân viên dùng được đơn hàng, sản phẩm, câu chuyện, thống kê; quản trị viên có thêm quản lý tài khoản (phân vai trò, mở khóa) và danh sách khách hàng chi tiêu nhiều nhất trong thống kê. `proxy.js` và `lib/adminAuth.js` kiểm tra quyền.
 - Chatbot tư vấn đặc sản dùng Gemini (`api/chat/route.js`, `lib/chatbot.js`, `components/ChatWidget.js`, nút chat nổi gắn trong `app/layout.js`). Mô hình chỉ trả MÃ sản phẩm; tên, ảnh, giá luôn lấy lại từ database. Có lọc ngân sách ("dưới 300 nghìn"), giới hạn số lần hỏi theo IP và theo ngày. Biến môi trường trong `.env` (không có trên GitHub, xem `.env.example`): `GEMINI_API_KEY` (bắt buộc), `GEMINI_MODEL` (tùy chọn, mặc định `gemini-3.5-flash-lite`), `CHAT_IP_LIMIT` và `CHAT_DAILY_LIMIT` (tùy chọn). Khóa API chỉ dùng ở server, không để trong biến `NEXT_PUBLIC_`.
 
-## Cấu trúc `src/` (không gồm admin)
+## Cấu trúc `src/`
 - `app/page.js` trang chủ · `app/about` giới thiệu · `app/products` danh sách + `[id]` chi tiết · `app/stories` câu chuyện + `[slug]`
 - `app/cart` · `app/checkout` · `app/orders` + `[id]` · `app/login` · `app/register` · `app/forgot-password`
 - `app/api/auth/*` đăng nhập, đăng ký, OTP, quên/đặt lại mật khẩu, `me`, `logout`
@@ -38,9 +39,10 @@ Bối cảnh: từ 01/07/2025 ba tỉnh Lâm Đồng, Đắk Nông, Bình Thuậ
 - `hooks/`: `useAuth`, `useCart`, `useCartCount`
 - `lib/`: `db` (kết nối MariaDB), `auth`, `mailer` (gửi email OTP), `orderRules`, `orderUtils`, `productRules`, `storyRules`, `storyFormat`, `shopBank` + `vietqr` (QR thanh toán), `similarity` (gợi ý tương tự), `chatbot` (logic chatbot), `variantLabel` (cách gọi khối lượng/dung tích)
 - `proxy.js` chặn truy cập khu vực quản trị khi chưa đủ quyền
+- Quản trị: `app/admin` (tổng quan, `orders`, `products`, `stories`, `users`), `app/api/admin` (`orders`, `products`, `stories`, `stats`, `upload`, `users`), `components/admin` (`ProductForm`, `StoryForm`, `ConfirmDialog`, `charts`), `lib/adminAuth.js`
 
-## Không được sửa (AI khác đang làm)
-- Toàn bộ `app/admin/**`, `app/api/admin/**`, `components/admin/**`, `lib/adminAuth.js` (trang quản lý, thống kê cho admin và nhân viên).
+## Lưu ý khi sửa code
+- Khu vực quản trị đã hoàn thành; chỉ thay đổi khi người dùng yêu cầu, và phải giữ nguyên kiểm tra quyền (admin/nhân viên) ở mỗi API.
 - Không sửa logic `app/api/orders/**` trừ khi người dùng yêu cầu rõ.
 
 ## Cách làm việc
